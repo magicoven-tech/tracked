@@ -3,82 +3,55 @@
 // Communicates with Arduino Nano via Web Serial API
 // ============================================================
 
-// ── Serial Connection Manager ──────────────────────────────
-class SerialConnection {
+// ── WebSocket Connection Manager ───────────────────────────
+class WebSocketConnection {
   constructor() {
-    this.port = null;
-    this.reader = null;
-    this.writer = null;
-    this.readableStreamClosed = null;
-    this.writableStreamClosed = null;
+    this.socket = null;
     this.connected = false;
     this.onReceive = null;
     this.onDisconnect = null;
-    this._buffer = '';
   }
 
-  async connect() {
-    try {
-      this.port = await navigator.serial.requestPort();
-      await this.port.open({ baudRate: 9600 });
-      this.connected = true;
+  connect(ip) {
+    return new Promise((resolve) => {
+      try {
+        this.socket = new WebSocket(`ws://${ip}:81/`);
 
-      // Start reading
-      this._startReading();
+        this.socket.onopen = () => {
+          this.connected = true;
+          resolve(true);
+        };
 
-      // Listen for disconnect
-      navigator.serial.addEventListener('disconnect', (e) => {
-        if (e.target === this.port) {
+        this.socket.onmessage = (event) => {
+          if (this.onReceive) {
+            const lines = event.data.split('\n');
+            lines.forEach(line => {
+              if (line.trim()) this.onReceive(line.trim());
+            });
+          }
+        };
+
+        this.socket.onclose = () => {
           this.connected = false;
           if (this.onDisconnect) this.onDisconnect();
-        }
-      });
+          resolve(false);
+        };
 
-      return true;
-    } catch (err) {
-      console.error('Connection failed:', err);
-      return false;
-    }
-  }
-
-  async _startReading() {
-    const decoder = new TextDecoderStream();
-    this.readableStreamClosed = this.port.readable.pipeTo(decoder.writable);
-    const inputStream = decoder.readable;
-    this.reader = inputStream.getReader();
-
-    try {
-      while (true) {
-        const { value, done } = await this.reader.read();
-        if (done) break;
-        if (value) {
-          this._buffer += value;
-          const lines = this._buffer.split('\n');
-          // Process all complete lines
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i].trim();
-            if (line && this.onReceive) {
-              this.onReceive(line);
-            }
-          }
-          // Keep the last incomplete line in the buffer
-          this._buffer = lines[lines.length - 1];
-        }
+        this.socket.onerror = (err) => {
+          console.error('WebSocket error:', err);
+          resolve(false);
+        };
+      } catch (err) {
+        console.error('Connection failed:', err);
+        resolve(false);
       }
-    } catch (err) {
-      if (this.connected) {
-        console.error('Read error:', err);
-      }
-    }
+    });
   }
 
   async send(data) {
-    if (!this.connected || !this.port?.writable) return false;
+    if (!this.connected || !this.socket) return false;
     try {
-      const writer = this.port.writable.getWriter();
-      const encoder = new TextEncoder();
-      await writer.write(encoder.encode(data + '\n'));
-      writer.releaseLock();
+      this.socket.send(data + '\n');
       return true;
     } catch (err) {
       console.error('Send error:', err);
@@ -87,19 +60,8 @@ class SerialConnection {
   }
 
   async disconnect() {
-    this.connected = false;
-    try {
-      if (this.reader) {
-        await this.reader.cancel();
-        await this.readableStreamClosed.catch(() => {});
-        this.reader = null;
-      }
-      if (this.port) {
-        await this.port.close();
-        this.port = null;
-      }
-    } catch (err) {
-      console.error('Disconnect error:', err);
+    if (this.socket) {
+      this.socket.close();
     }
   }
 }
@@ -182,7 +144,7 @@ class PomodoroTimer {
 }
 
 // ── Application State ──────────────────────────────────────
-const serial = new SerialConnection();
+const trenzinConn = new WebSocketConnection();
 const timer = new PomodoroTimer();
 let currentExpression = 'idle';
 let lcdRow0 = '                ';
@@ -194,14 +156,6 @@ const $$ = (sel) => document.querySelectorAll(sel);
 
 // ── Initialize ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Check for Web Serial support
-  if (!('serial' in navigator)) {
-    addLog('Web Serial API not supported. Use Chrome or Edge.', 'error');
-    $('#connect-btn').disabled = true;
-    $('#connect-btn').textContent = 'Not Supported';
-    return;
-  }
-
   setupEventListeners();
   updateTimerDisplay();
   updateLCDPreview();
@@ -224,31 +178,31 @@ function setupEventListeners() {
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
     timer.start('focus');
-    serial.send('TMR:START');
+    trenzinConn.send('TMR:START');
     addLog('TMR:START', 'tx');
   });
 
   $('#btn-pause').addEventListener('click', () => {
     if (timer.state === 'paused') {
       timer.resume();
-      serial.send('TMR:RESUME');
+      trenzinConn.send('TMR:RESUME');
       addLog('TMR:RESUME', 'tx');
     } else {
       timer.pause();
-      serial.send('TMR:PAUSE');
+      trenzinConn.send('TMR:PAUSE');
       addLog('TMR:PAUSE', 'tx');
     }
   });
 
   $('#btn-stop').addEventListener('click', () => {
     timer.stop();
-    serial.send('TMR:STOP');
+    trenzinConn.send('TMR:STOP');
     addLog('TMR:STOP', 'tx');
   });
 
   $('#btn-break').addEventListener('click', () => {
     timer.start('break');
-    serial.send('TMR:BREAK');
+    trenzinConn.send('TMR:BREAK');
     addLog('TMR:BREAK', 'tx');
   });
 
@@ -258,7 +212,7 @@ function setupEventListeners() {
     const input = $('#message-input');
     const msg = input.value.trim();
     if (msg) {
-      serial.send('MSG:' + msg);
+      trenzinConn.send('MSG:' + msg);
       addLog('MSG:' + msg, 'tx');
       lcdRow1 = msg.substring(0, 16).padEnd(16, ' ');
       updateLCDPreview();
@@ -295,37 +249,44 @@ function setupEventListeners() {
 
 // ── Connection ─────────────────────────────────────────────
 async function handleConnect() {
-  if (serial.connected) {
-    await serial.disconnect();
+  if (trenzinConn.connected) {
+    await trenzinConn.disconnect();
     updateConnectionUI(false);
     addLog('Disconnected', 'system');
     return;
   }
 
+  const ipInput = $('#ip-input');
+  const ip = ipInput.value.trim();
+  if (!ip) {
+    addLog('Please enter the Trenzin IP address', 'error');
+    return;
+  }
+
   // Set up handlers before connecting so early messages aren't lost
-  serial.onReceive = (data) => {
+  trenzinConn.onReceive = (data) => {
     addLog(data, 'rx');
     parseArduinoMessage(data);
   };
 
-  serial.onDisconnect = () => {
+  trenzinConn.onDisconnect = () => {
     updateConnectionUI(false);
-    addLog('Arduino disconnected', 'error');
+    addLog('Trenzin disconnected', 'error');
   };
 
-  addLog('Requesting serial port...', 'system');
-  const success = await serial.connect();
+  addLog('Connecting to WebSocket...', 'system');
+  const success = await trenzinConn.connect(ip);
 
   if (success) {
     updateConnectionUI(true);
-    addLog('Connected to Arduino', 'system');
+    addLog('Connected to Trenzin', 'system');
 
     // Request notification permission
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
   } else {
-    addLog('Connection failed or cancelled', 'error');
+    addLog('Connection failed', 'error');
   }
 }
 
@@ -333,7 +294,7 @@ async function handleConnect() {
 function sendExpression(expr) {
   currentExpression = expr;
   const cmd = 'EXP:' + expr.toUpperCase();
-  serial.send(cmd);
+  trenzinConn.send(cmd);
   addLog(cmd, 'tx');
 
   // Update UI
@@ -463,9 +424,9 @@ function updateTimerDisplay() {
 
 function updateLCDFace(expr) {
   const faceMap = {
-    idle:  '     O    O     ',
+    idle: '     O    O     ',
     happy: '     ^ vv ^     ',
-    sad:   '     T    T     ',
+    sad: '     T    T     ',
     angry: '     >·><·<     ',
     focus: '     =    =     ',
     sleep: '    - _- z Z    ',
