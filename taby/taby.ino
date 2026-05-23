@@ -1,19 +1,28 @@
 // ============================================================
-// TABY Clone — Arduino Nano + LCD 1602A
+// Trenzin — ESP32 + LCD 1602A (Wi-Fi WebSocket)
 // A cute desk buddy with expressions & Pomodoro timer
 // ============================================================
-// Wiring (4-bit parallel mode):
-//   LCD RS  → Pin 12    LCD Enable → Pin 11
-//   LCD D4  → Pin 5     LCD D5     → Pin 4
-//   LCD D6  → Pin 3     LCD D7     → Pin 2
-//   LCD R/W → GND
-//   Contrast pot (10kΩ) on V0
+// Wiring (4-bit parallel mode for ESP32 - 3.3V Logic):
+//   LCD RS  → GPIO 19   LCD Enable → GPIO 23
+//   LCD D4  → GPIO 18   LCD D5     → GPIO 17
+//   LCD D6  → GPIO 16   LCD D7     → GPIO 15
+//   LCD R/W → GND       (CRITICAL! Must be GND to protect ESP32)
+//   LCD VDD → 5V (VIN)  LCD VSS    → GND
+//   Contrast pot (10kΩ) on V0 or GND directly
 // ============================================================
 
 #include <LiquidCrystal.h>
+#include <WebSocketsServer.h>
+#include <WiFi.h>
 
 // ── Pin Configuration ──────────────────────────────────────
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
+
+// ── Wi-Fi Configuration ────────────────────────────────────
+const char *ssid = "Baia_2G";
+const char *password = "Baia246810";
+
+WebSocketsServer webSocket = WebSocketsServer(81);
 
 // ── States ─────────────────────────────────────────────────
 enum Expression {
@@ -50,9 +59,6 @@ const unsigned long BLINK_DURATION = 180; // ms
 const unsigned long FOCUS_DURATION = 25UL * 60; // 25 min in seconds
 const unsigned long BREAK_DURATION = 5UL * 60;  // 5 min in seconds
 
-// ── Serial Buffer ──────────────────────────────────────────
-String serialBuffer = "";
-
 // ── Temporary Message ──────────────────────────────────────
 String tempMessage = "";
 unsigned long tempMsgTimeout = 0;
@@ -61,109 +67,150 @@ unsigned long tempMsgTimeout = 0;
 // Slot 0: Left eye open
 byte eyeLeftOpen[8] = {B00000, B01110, B10001, B10011,
                        B10011, B10001, B01110, B00000};
-
 // Slot 1: Right eye open
 byte eyeRightOpen[8] = {B00000, B01110, B10001, B11001,
                         B11001, B10001, B01110, B00000};
-
 // Slot 2: Eye closed (blink — same for both)
 byte eyeClosed[8] = {B00000, B00000, B00000, B01110,
                      B10001, B00000, B00000, B00000};
-
 // Slot 3: Happy left eye (^)
 byte eyeHappyL[8] = {B00000, B00000, B10001, B01010,
                      B00100, B00000, B00000, B00000};
-
 // Slot 4: Happy right eye (^)
 byte eyeHappyR[8] = {B00000, B00000, B10001, B01010,
                      B00100, B00000, B00000, B00000};
-
 // Slot 5: Sad eye
 byte eyeSad[8] = {B00000, B00000, B00100, B01010,
                   B10001, B10001, B01110, B00000};
-
 // Slot 6: Angry eye
 byte eyeAngry[8] = {B10000, B01000, B01110, B10001,
                     B10011, B10001, B01110, B00000};
-
 // Slot 7: Focus eye (determined squint)
 byte eyeFocus[8] = {B00000, B00000, B01110, B10001,
                     B10011, B01110, B00000, B00000};
 
 // ── Redraw Helpers ─────────────────────────────────────────
-// Track what's drawn so we only update when changed
 Expression lastDrawnExpr = (Expression)255;
 bool lastDrawnBlink = false;
 TimerState lastDrawnTimerState = (TimerState)255;
 unsigned long lastDrawnSeconds = 999999;
 String lastDrawnMsg = "";
 
+// ── Send to all WebSocket Clients ──────────────────────────
+void sendToClients(String msg) {
+  webSocket.broadcastTXT(msg);
+  Serial.println("TX: " + msg);
+}
+
 // ── Setup ──────────────────────────────────────────────────
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+
+  // Truque mágico do Contraste (PWM) no Pino 13
+  pinMode(13, OUTPUT);
+  // O valor vai de 0 (máximo escuro/GND) a 255 (apagado).
+  // 60 costuma ser o ponto doce perfeito! Mude se precisar.
+  analogWrite(13, 75);
+
   lcd.begin(16, 2);
 
-  // Register default custom characters
   loadExpressionChars(EXPR_IDLE);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Trenzin OS 2.0");
+  lcd.setCursor(0, 1);
+  lcd.print("Conectando...");
 
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi Connected!");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // Show IP on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Wi-Fi OK!");
+  lcd.setCursor(0, 1);
+  lcd.print(WiFi.localIP().toString());
+  delay(5000); // Give user time to read the IP
+
+  // Start WebSocket Server
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+
+  // Initialize UI
   lcd.clear();
   drawFace();
   drawStatusLine();
-
-  Serial.println("ACK:BOOT");
-  Serial.println("STATE:IDLE");
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
 }
 
+// ── WebSocket Event Handler ────────────────────────────────
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
+                    size_t length) {
+  switch (type) {
+  case WStype_DISCONNECTED:
+    Serial.printf("[%u] Disconnected!\n", num);
+    break;
+  case WStype_CONNECTED: {
+    IPAddress ip = webSocket.remoteIP(num);
+    Serial.printf("[%u] Connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2],
+                  ip[3]);
+    // Send initial state to the new client
+    sendToClients("ACK:BOOT");
+    sendToClients("STATE:IDLE");
+  } break;
+  case WStype_TEXT: {
+    String cmd = "";
+    for (int i = 0; i < length; i++) {
+      cmd += (char)payload[i];
+    }
+    Serial.printf("[%u] RX: %s\n", num, cmd.c_str());
+    processCommand(cmd);
+  } break;
+  }
+}
+
 // ── Main Loop ──────────────────────────────────────────────
 void loop() {
+  webSocket.loop();
+
   unsigned long now = millis();
 
-  // ── Read Serial ──
-  while (Serial.available()) {
-    char c = Serial.read();
-    if (c == '\n' || c == '\r') {
-      if (serialBuffer.length() > 0) {
-        processCommand(serialBuffer);
-        serialBuffer = "";
-      }
-    } else {
-      serialBuffer += c;
-    }
-  }
-
-  // ── Expression auto-return to idle ──
   if (exprTimeout > 0 && now >= exprTimeout) {
     exprTimeout = 0;
     setExpression(EXPR_IDLE);
   }
 
-  // ── Temp message timeout ──
   if (tempMsgTimeout > 0 && now >= tempMsgTimeout) {
     tempMessage = "";
     tempMsgTimeout = 0;
-    lastDrawnMsg = ""; // force redraw
+    lastDrawnMsg = "";
     drawStatusLine();
   }
 
-  // ── Blink animation (only in IDLE) ──
   if (currentExpr == EXPR_IDLE) {
     if (!isBlinking && (now - lastBlinkTime >= nextBlinkInterval)) {
       isBlinking = true;
       blinkStart = now;
-      drawFace(); // draw closed eyes
+      drawFace();
     }
     if (isBlinking && (now - blinkStart >= BLINK_DURATION)) {
       isBlinking = false;
       lastBlinkTime = now;
       nextBlinkInterval = random(2500, 5000);
-      drawFace(); // draw open eyes
+      drawFace();
     }
   }
 
-  // ── Timer countdown ──
   if ((timerState == TIMER_FOCUS || timerState == TIMER_BREAK) &&
       timerSecondsRemaining > 0) {
     if (now - lastTimerTick >= 1000) {
@@ -182,8 +229,6 @@ void loop() {
 // ── Command Parser ─────────────────────────────────────────
 void processCommand(String cmd) {
   cmd.trim();
-
-  // Save raw command before uppercasing (preserves MSG text case)
   String rawCmd = cmd;
   cmd.toUpperCase();
 
@@ -201,13 +246,13 @@ void processCommand(String cmd) {
       setExpression(EXPR_FOCUS);
     else if (expr == "SLEEP")
       setExpression(EXPR_SLEEP);
-    Serial.println("ACK:" + cmd);
+    sendToClients("ACK:" + cmd);
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
     if (action == "START") {
       startTimer(TIMER_FOCUS, FOCUS_DURATION);
       setExpression(EXPR_FOCUS);
-      exprTimeout = 0; // don't auto-return during focus
+      exprTimeout = 0;
     } else if (action == "PAUSE") {
       if (timerState == TIMER_FOCUS)
         timerState = TIMER_FOCUS_PAUSED;
@@ -233,17 +278,16 @@ void processCommand(String cmd) {
       setExpression(EXPR_HAPPY);
       exprTimeout = 0;
     }
-    Serial.println("ACK:" + cmd);
+    sendToClients("ACK:" + cmd);
     sendTimerState();
   } else if (cmd.startsWith("MSG:")) {
-    // Use rawCmd to preserve original case for the message text
     tempMessage = rawCmd.substring(4);
     if (tempMessage.length() > 16)
       tempMessage = tempMessage.substring(0, 16);
-    tempMsgTimeout = millis() + 4000; // show for 4 seconds
+    tempMsgTimeout = millis() + 4000;
     lastDrawnMsg = "";
     drawStatusLine();
-    Serial.println("ACK:MSG");
+    sendToClients("ACK:MSG");
   }
 }
 
@@ -253,9 +297,7 @@ void setExpression(Expression expr) {
   isBlinking = false;
   loadExpressionChars(expr);
 
-  // Auto-return timeout for transient expressions
   if (expr == EXPR_HAPPY || expr == EXPR_SAD || expr == EXPR_ANGRY) {
-    // Only auto-return if timer is not running
     if (timerState == TIMER_OFF || timerState == TIMER_DONE) {
       exprTimeout = millis() + 5000;
     }
@@ -265,7 +307,6 @@ void setExpression(Expression expr) {
 
   drawFace();
 
-  // Send state
   String exprName;
   switch (expr) {
   case EXPR_IDLE:
@@ -287,7 +328,7 @@ void setExpression(Expression expr) {
     exprName = "SLEEP";
     break;
   }
-  Serial.println("FACE:" + exprName);
+  sendToClients("FACE:" + exprName);
 }
 
 void loadExpressionChars(Expression expr) {
@@ -322,15 +363,10 @@ void loadExpressionChars(Expression expr) {
 
 // ── Draw Functions ─────────────────────────────────────────
 void drawFace() {
-  // Row 0: face expression
-  // Layout: "  L    R   status"
-  // Positions: eye_L at col 5, eye_R at col 10
-
   lcd.setCursor(0, 0);
-  lcd.print("                "); // clear row 0
+  lcd.print("                ");
 
   if (currentExpr == EXPR_SLEEP) {
-    // Sleeping face: -_- z Z
     lcd.setCursor(4, 0);
     lcd.print("-");
     lcd.setCursor(6, 0);
@@ -340,26 +376,21 @@ void drawFace() {
     lcd.setCursor(11, 0);
     lcd.print("z Z");
   } else if (currentExpr == EXPR_IDLE && isBlinking) {
-    // Blinking: show closed eyes
     lcd.setCursor(5, 0);
-    lcd.write((byte)2); // closed
+    lcd.write((byte)2);
     lcd.setCursor(10, 0);
-    lcd.write((byte)2); // closed
+    lcd.write((byte)2);
   } else {
-    // Normal: show expression eyes
     lcd.setCursor(5, 0);
-    lcd.write((byte)0); // left eye
+    lcd.write((byte)0);
     lcd.setCursor(10, 0);
-    lcd.write((byte)1); // right eye
+    lcd.write((byte)1);
 
-    // Add mouth/extras for some expressions
     if (currentExpr == EXPR_HAPPY) {
       lcd.setCursor(7, 0);
       lcd.print("v");
       lcd.setCursor(8, 0);
       lcd.print("v");
-    } else if (currentExpr == EXPR_SAD) {
-      // sad mouth on row 0 isn't great, skip
     } else if (currentExpr == EXPR_ANGRY) {
       lcd.setCursor(7, 0);
       lcd.print(">");
@@ -375,7 +406,6 @@ void drawFace() {
 void drawStatusLine() {
   lcd.setCursor(0, 1);
 
-  // If there's a temporary message, show it
   if (tempMessage.length() > 0) {
     String padded = tempMessage;
     while (padded.length() < 16)
@@ -446,7 +476,6 @@ void drawStatusLine() {
     break;
   }
 
-  // Pad to 16 chars
   while (line.length() < 16)
     line += ' ';
   line = line.substring(0, 16);
@@ -467,22 +496,19 @@ void startTimer(TimerState state, unsigned long seconds) {
 
 void onTimerDone() {
   if (timerState == TIMER_FOCUS) {
-    // Focus done — celebrate!
     timerState = TIMER_DONE;
     setExpression(EXPR_HAPPY);
     exprTimeout = 0;
-    Serial.println("STATE:DONE");
+    sendToClients("STATE:DONE");
 
-    // Flash "DONE!" message
     tempMessage = "  FOCUS DONE!   ";
     tempMsgTimeout = millis() + 5000;
     lastDrawnMsg = "";
     drawStatusLine();
   } else if (timerState == TIMER_BREAK) {
-    // Break done — ready to go again
     timerState = TIMER_DONE;
     setExpression(EXPR_IDLE);
-    Serial.println("STATE:DONE");
+    sendToClients("STATE:DONE");
 
     tempMessage = "  BREAK OVER!   ";
     tempMsgTimeout = millis() + 4000;
@@ -530,5 +556,5 @@ void sendTimerState() {
     msg += "DONE";
     break;
   }
-  Serial.println(msg);
+  sendToClients(msg);
 }

@@ -120,6 +120,38 @@ body::before {
   font-weight: 500;
 }
 
+/* ── Connection Group ───────────────────────────────────── */
+.connection-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ip-input {
+  width: 150px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  transition: all var(--transition-default);
+  backdrop-filter: blur(12px);
+}
+
+.ip-input::placeholder {
+  color: var(--text-ghost);
+}
+
+.ip-input:focus {
+  border-color: rgba(50, 215, 75, 0.4);
+  background: var(--bg-surface-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
 /* ── Connection Button ──────────────────────────────────── */
 .connect-btn {
   display: flex;
