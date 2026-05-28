@@ -132,7 +132,7 @@ void setup() {
   // Connect to Wi-Fi using WiFiManager
   WiFiManager wifiManager;
   // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar o portal cativo, descomente a linha abaixo.
-   wifiManager.resetSettings();
+  //wifiManager.resetSettings();
 
   // Tenta conectar nas redes conhecidas. 
   // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado "Trenzin-Setup"

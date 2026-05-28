@@ -12,7 +12,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>Trenzin - Seu companheiro de mesa</title>
   <meta name="description"
     content="Control your Taby desk robot clone. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
@@ -882,6 +882,10 @@ body::before {
 
   .message-form {
     flex-direction: column;
+  }
+
+  .message-input {
+    font-size: 16px;
   }
 
   .send-btn {
