@@ -145,7 +145,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
       <div class="card card--full animate-in" id="card-serial">
         <span class="card__label">Serial Monitor</span>
         <div class="serial-log" id="serial-log">
-          <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...\n</span>
+          <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...</span>
         </div>
       </div>
 
@@ -226,6 +226,9 @@ const char WEB_CSS[] PROGMEM = R"=====(
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
@@ -726,6 +729,8 @@ body::before {
   padding: 12px 16px;
   max-height: 160px;
   overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 12px;
   line-height: 1.7;
@@ -873,6 +878,18 @@ body::before {
   .lcd__row {
     font-size: 16px;
     letter-spacing: 3px;
+  }
+
+  .message-form {
+    flex-direction: column;
+  }
+
+  .send-btn {
+    width: 100%;
+  }
+
+  .card {
+    padding: 16px;
   }
 }
 
