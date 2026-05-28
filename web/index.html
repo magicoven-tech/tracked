@@ -85,28 +85,6 @@
         </div>
       </div>
 
-      <!-- Pomodoro Timer Card -->
-      <div class="card animate-in" id="card-timer">
-        <span class="card__label">Pomodoro Timer</span>
-        <div class="timer">
-          <div class="timer__display">
-            <svg class="timer__ring" viewBox="0 0 200 200">
-              <circle class="timer__ring-bg" cx="100" cy="100" r="90" />
-              <circle class="timer__ring-progress" id="timer-progress" cx="100" cy="100" r="90"
-                style="stroke-dasharray: 565.48; stroke-dashoffset: 565.48;" />
-            </svg>
-            <span class="timer__time" id="timer-time">25:00</span>
-            <span class="timer__state" id="timer-state">Ready</span>
-          </div>
-          <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
-            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
-            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
-            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
-          </div>
-        </div>
-      </div>
-
       <!-- LCD Preview Card -->
       <div class="card animate-in" id="card-lcd">
         <span class="card__label">LCD Preview</span>
@@ -130,6 +108,28 @@
             autocomplete="off">
           <button type="submit" class="send-btn" id="send-btn">Send</button>
         </form>
+      </div>
+
+      <!-- Pomodoro Timer Card -->
+      <div class="card animate-in" id="card-timer">
+        <span class="card__label">Pomodoro Timer</span>
+        <div class="timer">
+          <div class="timer__display">
+            <svg class="timer__ring" viewBox="0 0 200 200">
+              <circle class="timer__ring-bg" cx="100" cy="100" r="90" />
+              <circle class="timer__ring-progress" id="timer-progress" cx="100" cy="100" r="90"
+                style="stroke-dasharray: 565.48; stroke-dashoffset: 565.48;" />
+            </svg>
+            <span class="timer__time" id="timer-time">25:00</span>
+            <span class="timer__state" id="timer-state">Ready</span>
+          </div>
+          <div class="timer__controls">
+            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
+            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
+            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
+            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
+          </div>
+        </div>
       </div>
 
       <!-- Serial Monitor Card -->
