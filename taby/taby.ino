@@ -14,13 +14,13 @@
 #include <LiquidCrystal.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 
 // ── Wi-Fi Configuration ────────────────────────────────────
-const char *ssid = "Baia_2G";
-const char *password = "Baia246810";
+// As credenciais agora são gerenciadas pelo WiFiManager
 
 WebSocketsServer webSocket = WebSocketsServer(81);
 
@@ -121,11 +121,20 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Conectando...");
 
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  // Connect to Wi-Fi using WiFiManager
+  WiFiManager wifiManager;
+  // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar o portal cativo, descomente a linha abaixo.
+   wifiManager.resetSettings();
+
+  // Tenta conectar nas redes conhecidas. 
+  // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado "Trenzin-Setup"
+  if (!wifiManager.autoConnect("Trenzin-Setup")) {
+    Serial.println("Falha ao conectar no Wi-Fi");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Falha de Wi-Fi!");
+    delay(3000);
+    ESP.restart(); // Reinicia o ESP para tentar novamente
   }
 
   Serial.println("\nWiFi Connected!");
