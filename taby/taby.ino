@@ -16,6 +16,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <WebServer.h>
+#include <ESPmDNS.h>
 #include "web_assets.h"
 
 // ── Pin Configuration ──────────────────────────────────────
@@ -148,13 +149,17 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Show IP on LCD
+  if (MDNS.begin("trenzin")) {
+    Serial.println("MDNS responder started");
+  }
+
+  // Show IP/Hostname on LCD
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Wi-Fi OK!");
   lcd.setCursor(0, 1);
-  lcd.print(WiFi.localIP().toString());
-  delay(5000); // Give user time to read the IP
+  lcd.print("trenzin.local");
+  delay(5000); // Give user time to read
 
   // Start WebSocket Server
   webSocket.begin();
@@ -177,7 +182,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print("Aguardando app..");
   lcd.setCursor(0, 1);
-  lcd.print(WiFi.localIP().toString());
+  lcd.print("trenzin.local");
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
@@ -224,7 +229,7 @@ void loop() {
       lcd.setCursor(0, 0);
       lcd.print("Aguardando app..");
       lcd.setCursor(0, 1);
-      lcd.print(WiFi.localIP().toString());
+      lcd.print("trenzin.local");
     } else {
       lastDrawnExpr = (Expression)255;
       lastDrawnMsg = "";
