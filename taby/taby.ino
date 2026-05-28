@@ -14,15 +14,18 @@
 #include <LiquidCrystal.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
+#include <WebServer.h>
+#include "web_assets.h"
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 
 // ── Wi-Fi Configuration ────────────────────────────────────
-const char *ssid = "Baia_2G";
-const char *password = "Baia246810";
+// As credenciais agora são gerenciadas pelo WiFiManager
 
 WebSocketsServer webSocket = WebSocketsServer(81);
+WebServer server(80);
 
 // ── States ─────────────────────────────────────────────────
 enum Expression {
@@ -96,6 +99,10 @@ TimerState lastDrawnTimerState = (TimerState)255;
 unsigned long lastDrawnSeconds = 999999;
 String lastDrawnMsg = "";
 
+// ── Connection Tracking ────────────────────────────────────
+int connectedClients = 0;
+bool lastConnectionState = false;
+
 // ── Send to all WebSocket Clients ──────────────────────────
 void sendToClients(String msg) {
   webSocket.broadcastTXT(msg);
@@ -121,11 +128,20 @@ void setup() {
   lcd.setCursor(0, 1);
   lcd.print("Conectando...");
 
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+  // Connect to Wi-Fi using WiFiManager
+  WiFiManager wifiManager;
+  // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar o portal cativo, descomente a linha abaixo.
+   wifiManager.resetSettings();
+
+  // Tenta conectar nas redes conhecidas. 
+  // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado "Trenzin-Setup"
+  if (!wifiManager.autoConnect("Trenzin-Setup")) {
+    Serial.println("Falha ao conectar no Wi-Fi");
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Falha de Wi-Fi!");
+    delay(3000);
+    ESP.restart(); // Reinicia o ESP para tentar novamente
   }
 
   Serial.println("\nWiFi Connected!");
@@ -144,10 +160,24 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
+  // Setup Web Server Routes
+  server.on("/", []() {
+    server.send(200, "text/html", WEB_HTML);
+  });
+  server.on("/style.css", []() {
+    server.send(200, "text/css", WEB_CSS);
+  });
+  server.on("/app.js", []() {
+    server.send(200, "application/javascript", WEB_JS);
+  });
+  server.begin();
+
   // Initialize UI
   lcd.clear();
-  drawFace();
-  drawStatusLine();
+  lcd.setCursor(0, 0);
+  lcd.print("Aguardando app..");
+  lcd.setCursor(0, 1);
+  lcd.print(WiFi.localIP().toString());
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
@@ -159,8 +189,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   switch (type) {
   case WStype_DISCONNECTED:
     Serial.printf("[%u] Disconnected!\n", num);
+    if (connectedClients > 0) connectedClients--;
     break;
   case WStype_CONNECTED: {
+    connectedClients++;
     IPAddress ip = webSocket.remoteIP(num);
     Serial.printf("[%u] Connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2],
                   ip[3]);
@@ -182,6 +214,24 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 // ── Main Loop ──────────────────────────────────────────────
 void loop() {
   webSocket.loop();
+  server.handleClient();
+
+  bool currentConnectionState = (connectedClients > 0);
+  if (currentConnectionState != lastConnectionState) {
+    lastConnectionState = currentConnectionState;
+    lcd.clear();
+    if (!currentConnectionState) {
+      lcd.setCursor(0, 0);
+      lcd.print("Aguardando app..");
+      lcd.setCursor(0, 1);
+      lcd.print(WiFi.localIP().toString());
+    } else {
+      lastDrawnExpr = (Expression)255;
+      lastDrawnMsg = "";
+      drawFace();
+      drawStatusLine();
+    }
+  }
 
   unsigned long now = millis();
 
@@ -363,6 +413,8 @@ void loadExpressionChars(Expression expr) {
 
 // ── Draw Functions ─────────────────────────────────────────
 void drawFace() {
+  if (connectedClients == 0) return;
+
   lcd.setCursor(0, 0);
   lcd.print("                ");
 
@@ -404,6 +456,8 @@ void drawFace() {
 }
 
 void drawStatusLine() {
+  if (connectedClients == 0) return;
+
   lcd.setCursor(0, 1);
 
   if (tempMessage.length() > 0) {
