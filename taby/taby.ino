@@ -96,6 +96,10 @@ TimerState lastDrawnTimerState = (TimerState)255;
 unsigned long lastDrawnSeconds = 999999;
 String lastDrawnMsg = "";
 
+// ── Connection Tracking ────────────────────────────────────
+int connectedClients = 0;
+bool lastConnectionState = false;
+
 // ── Send to all WebSocket Clients ──────────────────────────
 void sendToClients(String msg) {
   webSocket.broadcastTXT(msg);
@@ -155,8 +159,10 @@ void setup() {
 
   // Initialize UI
   lcd.clear();
-  drawFace();
-  drawStatusLine();
+  lcd.setCursor(0, 0);
+  lcd.print("Aguardando app..");
+  lcd.setCursor(0, 1);
+  lcd.print(WiFi.localIP().toString());
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
@@ -168,8 +174,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   switch (type) {
   case WStype_DISCONNECTED:
     Serial.printf("[%u] Disconnected!\n", num);
+    if (connectedClients > 0) connectedClients--;
     break;
   case WStype_CONNECTED: {
+    connectedClients++;
     IPAddress ip = webSocket.remoteIP(num);
     Serial.printf("[%u] Connected from %d.%d.%d.%d\n", num, ip[0], ip[1], ip[2],
                   ip[3]);
@@ -191,6 +199,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 // ── Main Loop ──────────────────────────────────────────────
 void loop() {
   webSocket.loop();
+
+  bool currentConnectionState = (connectedClients > 0);
+  if (currentConnectionState != lastConnectionState) {
+    lastConnectionState = currentConnectionState;
+    lcd.clear();
+    if (!currentConnectionState) {
+      lcd.setCursor(0, 0);
+      lcd.print("Aguardando app..");
+      lcd.setCursor(0, 1);
+      lcd.print(WiFi.localIP().toString());
+    } else {
+      lastDrawnExpr = (Expression)255;
+      lastDrawnMsg = "";
+      drawFace();
+      drawStatusLine();
+    }
+  }
 
   unsigned long now = millis();
 
@@ -372,6 +397,8 @@ void loadExpressionChars(Expression expr) {
 
 // ── Draw Functions ─────────────────────────────────────────
 void drawFace() {
+  if (connectedClients == 0) return;
+
   lcd.setCursor(0, 0);
   lcd.print("                ");
 
@@ -413,6 +440,8 @@ void drawFace() {
 }
 
 void drawStatusLine() {
+  if (connectedClients == 0) return;
+
   lcd.setCursor(0, 1);
 
   if (tempMessage.length() > 0) {
