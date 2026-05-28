@@ -158,9 +158,10 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  updateLCDFace(currentExpression);
   updateLCDPreview();
   updateConnectionUI(false);
-  
+
   // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
   if (window.location.hostname && window.location.hostname !== 'localhost') {
     handleConnect();

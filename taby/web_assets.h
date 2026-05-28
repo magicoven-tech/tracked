@@ -376,8 +376,17 @@ body::before {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent-glow); }
-  50% { opacity: 0.6; box-shadow: 0 0 16px var(--accent-glow); }
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
 }
 
 /* ── Section Layout ─────────────────────────────────────── */
@@ -531,8 +540,15 @@ body::before {
 }
 
 @keyframes pulse-ring {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .timer__time {
@@ -641,7 +657,7 @@ body::before {
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 20px;
   font-weight: 700;
-  letter-spacing: 4px;
+  letter-spacing: 7.5px;
   color: #7fff7f;
   text-shadow: 0 0 8px rgba(127, 255, 127, 0.4);
   line-height: 1.8;
@@ -824,6 +840,7 @@ body::before {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -834,11 +851,25 @@ body::before {
   animation: fadeInUp 0.5s ease-out forwards;
 }
 
-.animate-in:nth-child(1) { animation-delay: 0.05s; }
-.animate-in:nth-child(2) { animation-delay: 0.1s; }
-.animate-in:nth-child(3) { animation-delay: 0.15s; }
-.animate-in:nth-child(4) { animation-delay: 0.2s; }
-.animate-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-in:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.animate-in:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.animate-in:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.animate-in:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.animate-in:nth-child(5) {
+  animation-delay: 0.25s;
+}
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 480px) {
@@ -877,7 +908,7 @@ body::before {
 
   .lcd__row {
     font-size: 16px;
-    letter-spacing: 3px;
+    letter-spacing: 6px;
   }
 
   .message-form {
@@ -923,8 +954,7 @@ body::before {
 .disabled-overlay--active::after {
   opacity: 1;
   pointer-events: auto;
-}
-)=====";
+})=====";
 
 const char WEB_JS[] PROGMEM = R"=====(
 // ============================================================
@@ -1087,9 +1117,10 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  updateLCDFace(currentExpression);
   updateLCDPreview();
   updateConnectionUI(false);
-  
+
   // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
   if (window.location.hostname && window.location.hostname !== 'localhost') {
     handleConnect();
