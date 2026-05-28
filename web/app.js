@@ -160,6 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTimerDisplay();
   updateLCDPreview();
   updateConnectionUI(false);
+  
+  // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
+  if (window.location.hostname && window.location.hostname !== 'localhost') {
+    handleConnect();
+  }
 });
 
 // ── Event Listeners ────────────────────────────────────────
@@ -256,10 +261,9 @@ async function handleConnect() {
     return;
   }
 
-  const ipInput = $('#ip-input');
-  const ip = ipInput.value.trim();
+  const ip = window.location.hostname || '192.168.1.15'; // Fallback ip
   if (!ip) {
-    addLog('Please enter the Trenzin IP address', 'error');
+    addLog('Cannot determine IP address', 'error');
     return;
   }
 

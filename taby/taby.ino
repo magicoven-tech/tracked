@@ -15,6 +15,8 @@
 #include <WebSocketsServer.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
+#include <WebServer.h>
+#include "web_assets.h"
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
@@ -23,6 +25,7 @@ LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 // As credenciais agora são gerenciadas pelo WiFiManager
 
 WebSocketsServer webSocket = WebSocketsServer(81);
+WebServer server(80);
 
 // ── States ─────────────────────────────────────────────────
 enum Expression {
@@ -157,6 +160,18 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
+  // Setup Web Server Routes
+  server.on("/", []() {
+    server.send(200, "text/html", WEB_HTML);
+  });
+  server.on("/style.css", []() {
+    server.send(200, "text/css", WEB_CSS);
+  });
+  server.on("/app.js", []() {
+    server.send(200, "application/javascript", WEB_JS);
+  });
+  server.begin();
+
   // Initialize UI
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -199,6 +214,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 // ── Main Loop ──────────────────────────────────────────────
 void loop() {
   webSocket.loop();
+  server.handleClient();
 
   bool currentConnectionState = (connectedClients > 0);
   if (currentConnectionState != lastConnectionState) {
