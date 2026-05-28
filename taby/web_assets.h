@@ -12,7 +12,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>Trenzin - Seu companheiro de mesa</title>
   <meta name="description"
     content="Control your Taby desk robot clone. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
@@ -94,28 +94,6 @@ const char WEB_HTML[] PROGMEM = R"=====(
         </div>
       </div>
 
-      <!-- Pomodoro Timer Card -->
-      <div class="card animate-in" id="card-timer">
-        <span class="card__label">Pomodoro Timer</span>
-        <div class="timer">
-          <div class="timer__display">
-            <svg class="timer__ring" viewBox="0 0 200 200">
-              <circle class="timer__ring-bg" cx="100" cy="100" r="90" />
-              <circle class="timer__ring-progress" id="timer-progress" cx="100" cy="100" r="90"
-                style="stroke-dasharray: 565.48; stroke-dashoffset: 565.48;" />
-            </svg>
-            <span class="timer__time" id="timer-time">25:00</span>
-            <span class="timer__state" id="timer-state">Ready</span>
-          </div>
-          <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
-            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
-            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
-            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
-          </div>
-        </div>
-      </div>
-
       <!-- LCD Preview Card -->
       <div class="card animate-in" id="card-lcd">
         <span class="card__label">LCD Preview</span>
@@ -141,11 +119,33 @@ const char WEB_HTML[] PROGMEM = R"=====(
         </form>
       </div>
 
+      <!-- Pomodoro Timer Card -->
+      <div class="card animate-in" id="card-timer">
+        <span class="card__label">Pomodoro Timer</span>
+        <div class="timer">
+          <div class="timer__display">
+            <svg class="timer__ring" viewBox="0 0 200 200">
+              <circle class="timer__ring-bg" cx="100" cy="100" r="90" />
+              <circle class="timer__ring-progress" id="timer-progress" cx="100" cy="100" r="90"
+                style="stroke-dasharray: 565.48; stroke-dashoffset: 565.48;" />
+            </svg>
+            <span class="timer__time" id="timer-time">25:00</span>
+            <span class="timer__state" id="timer-state">Ready</span>
+          </div>
+          <div class="timer__controls">
+            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
+            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
+            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
+            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Serial Monitor Card -->
       <div class="card card--full animate-in" id="card-serial">
         <span class="card__label">Serial Monitor</span>
         <div class="serial-log" id="serial-log">
-          <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...\n</span>
+          <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...</span>
         </div>
       </div>
 
@@ -226,6 +226,9 @@ const char WEB_CSS[] PROGMEM = R"=====(
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
@@ -373,8 +376,17 @@ body::before {
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent-glow); }
-  50% { opacity: 0.6; box-shadow: 0 0 16px var(--accent-glow); }
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
 }
 
 /* ── Section Layout ─────────────────────────────────────── */
@@ -528,8 +540,15 @@ body::before {
 }
 
 @keyframes pulse-ring {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .timer__time {
@@ -638,7 +657,7 @@ body::before {
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 20px;
   font-weight: 700;
-  letter-spacing: 4px;
+  letter-spacing: 7.5px;
   color: #7fff7f;
   text-shadow: 0 0 8px rgba(127, 255, 127, 0.4);
   line-height: 1.8;
@@ -726,6 +745,8 @@ body::before {
   padding: 12px 16px;
   max-height: 160px;
   overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
   font-family: 'Courier New', 'Consolas', monospace;
   font-size: 12px;
   line-height: 1.7;
@@ -819,6 +840,7 @@ body::before {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -829,11 +851,25 @@ body::before {
   animation: fadeInUp 0.5s ease-out forwards;
 }
 
-.animate-in:nth-child(1) { animation-delay: 0.05s; }
-.animate-in:nth-child(2) { animation-delay: 0.1s; }
-.animate-in:nth-child(3) { animation-delay: 0.15s; }
-.animate-in:nth-child(4) { animation-delay: 0.2s; }
-.animate-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-in:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.animate-in:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.animate-in:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.animate-in:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.animate-in:nth-child(5) {
+  animation-delay: 0.25s;
+}
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 480px) {
@@ -872,7 +908,23 @@ body::before {
 
   .lcd__row {
     font-size: 16px;
-    letter-spacing: 3px;
+    letter-spacing: 6px;
+  }
+
+  .message-form {
+    flex-direction: column;
+  }
+
+  .message-input {
+    font-size: 16px;
+  }
+
+  .send-btn {
+    width: 100%;
+  }
+
+  .card {
+    padding: 16px;
   }
 }
 
@@ -902,8 +954,7 @@ body::before {
 .disabled-overlay--active::after {
   opacity: 1;
   pointer-events: auto;
-}
-)=====";
+})=====";
 
 const char WEB_JS[] PROGMEM = R"=====(
 // ============================================================
@@ -1066,9 +1117,10 @@ const $$ = (sel) => document.querySelectorAll(sel);
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  updateLCDFace(currentExpression);
   updateLCDPreview();
   updateConnectionUI(false);
-  
+
   // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
   if (window.location.hostname && window.location.hostname !== 'localhost') {
     handleConnect();

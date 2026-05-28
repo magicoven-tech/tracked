@@ -11,12 +11,13 @@
 //   Contrast pot (10kΩ) on V0 or GND directly
 // ============================================================
 
+#include "web_assets.h"
+#include <ESPmDNS.h>
 #include <LiquidCrystal.h>
+#include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
-#include <WebServer.h>
-#include "web_assets.h"
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
@@ -130,12 +131,14 @@ void setup() {
 
   // Connect to Wi-Fi using WiFiManager
   WiFiManager wifiManager;
-  // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar o portal cativo, descomente a linha abaixo.
-   wifiManager.resetSettings();
+  // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar
+  // o portal cativo, descomente a linha abaixo.
+  wifiManager.resetSettings();
 
-  // Tenta conectar nas redes conhecidas. 
-  // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado "Trenzin-Setup"
-  if (!wifiManager.autoConnect("Trenzin-Setup")) {
+  // Tenta conectar nas redes conhecidas.
+  // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado
+  // "Trenzin-Setup"
+  if (!wifiManager.autoConnect("trenzin-by-magicoven")) {
     Serial.println("Falha ao conectar no Wi-Fi");
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -148,28 +151,27 @@ void setup() {
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Show IP on LCD
+  if (MDNS.begin("trenzin")) {
+    Serial.println("MDNS responder started");
+  }
+
+  // Show IP/Hostname on LCD
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Wi-Fi OK!");
   lcd.setCursor(0, 1);
-  lcd.print(WiFi.localIP().toString());
-  delay(5000); // Give user time to read the IP
+  lcd.print("trenzin.local");
+  delay(5000); // Give user time to read
 
   // Start WebSocket Server
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
   // Setup Web Server Routes
-  server.on("/", []() {
-    server.send(200, "text/html", WEB_HTML);
-  });
-  server.on("/style.css", []() {
-    server.send(200, "text/css", WEB_CSS);
-  });
-  server.on("/app.js", []() {
-    server.send(200, "application/javascript", WEB_JS);
-  });
+  server.on("/", []() { server.send(200, "text/html", WEB_HTML); });
+  server.on("/style.css", []() { server.send(200, "text/css", WEB_CSS); });
+  server.on("/app.js",
+            []() { server.send(200, "application/javascript", WEB_JS); });
   server.begin();
 
   // Initialize UI
@@ -177,7 +179,7 @@ void setup() {
   lcd.setCursor(0, 0);
   lcd.print("Aguardando app..");
   lcd.setCursor(0, 1);
-  lcd.print(WiFi.localIP().toString());
+  lcd.print("trenzin.local");
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
@@ -189,7 +191,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
   switch (type) {
   case WStype_DISCONNECTED:
     Serial.printf("[%u] Disconnected!\n", num);
-    if (connectedClients > 0) connectedClients--;
+    if (connectedClients > 0)
+      connectedClients--;
     break;
   case WStype_CONNECTED: {
     connectedClients++;
@@ -224,7 +227,7 @@ void loop() {
       lcd.setCursor(0, 0);
       lcd.print("Aguardando app..");
       lcd.setCursor(0, 1);
-      lcd.print(WiFi.localIP().toString());
+      lcd.print("trenzin.local");
     } else {
       lastDrawnExpr = (Expression)255;
       lastDrawnMsg = "";
@@ -413,7 +416,8 @@ void loadExpressionChars(Expression expr) {
 
 // ── Draw Functions ─────────────────────────────────────────
 void drawFace() {
-  if (connectedClients == 0) return;
+  if (connectedClients == 0)
+    return;
 
   lcd.setCursor(0, 0);
   lcd.print("                ");
@@ -456,7 +460,8 @@ void drawFace() {
 }
 
 void drawStatusLine() {
-  if (connectedClients == 0) return;
+  if (connectedClients == 0)
+    return;
 
   lcd.setCursor(0, 1);
 
