@@ -33,39 +33,74 @@ const char WEB_HTML[] PROGMEM = R"=====(
 <body>
   <div class="app">
 
-    <!-- ── Header ──────────────────────────────────────── -->
-    <header class="header animate-in" id="header">
-      <div class="header__brand">
-        <h1 class="header__logo">TREN<span>ZIN</span></h1>
-        <span class="header__tagline">Seu companheiro de mesa</span>
-      </div>
-      <div class="connection-group">
+    <!-- ── VIEW: HOME ──────────────────────────────────────── -->
+    <div class="view view--active" id="view-home">
+      <header class="header animate-in" id="header">
+        <div class="header__brand">
+          <h1 class="header__logo">TREN<span>ZIN</span></h1>
+          <span class="header__tagline" id="date-display">Seu companheiro de mesa</span>
+        </div>
+        <div class="connection-group">
+          <button class="connect-btn" id="connect-btn">
+            <span class="connect-btn__dot"></span>
+            <span class="connect-btn__text">Connect Trenzin</span>
+          </button>
+        </div>
+      </header>
 
-        <button class="connect-btn" id="connect-btn">
-          <span class="connect-btn__dot"></span>
-          <span class="connect-btn__text">Connect Trenzin</span>
+      <div class="status-bar animate-in" id="status-bar">
+        <div class="status-chip" id="status-connection">
+          <span class="status-chip__icon">⚡</span>
+          <span class="status-chip__text">Offline</span>
+        </div>
+        <div class="status-chip" id="status-expression">
+          <span class="status-chip__icon">😊</span>
+          <span class="status-chip__text">Idle</span>
+        </div>
+      </div>
+
+      <!-- Minimalist LCD Preview -->
+      <div class="lcd-minimalist animate-in" id="lcd-minimalist">
+        <div class="lcd__row" id="lcd-row-0">     O    O     </div>
+        <div class="lcd__row" id="lcd-row-1">                </div>
+      </div>
+
+      <!-- Home Grid Shortcuts -->
+      <div class="home-shortcuts animate-in">
+        <button class="shortcut-btn" onclick="navigateTo('expressions')">
+          <span class="shortcut-btn__icon">😊</span>
+          <span class="shortcut-btn__label">Expressões</span>
         </button>
-      </div>
-    </header>
-
-    <!-- ── Status Bar ──────────────────────────────────── -->
-    <div class="status-bar animate-in" id="status-bar">
-      <div class="status-chip" id="status-connection">
-        <span class="status-chip__icon">⚡</span>
-        <span class="status-chip__text">Offline</span>
-      </div>
-      <div class="status-chip" id="status-expression">
-        <span class="status-chip__icon">😊</span>
-        <span class="status-chip__text">Idle</span>
+        <button class="shortcut-btn" onclick="navigateTo('messages')">
+          <span class="shortcut-btn__icon">💬</span>
+          <span class="shortcut-btn__label">Mensagem</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('timer')">
+          <span class="shortcut-btn__icon">⏱️</span>
+          <span class="shortcut-btn__label">Pomodoro</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('alarm')">
+          <span class="shortcut-btn__icon">⏰</span>
+          <span class="shortcut-btn__label">Alarme</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('serial')">
+          <span class="shortcut-btn__icon">💻</span>
+          <span class="shortcut-btn__label">Serial Monitor</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('settings')">
+          <span class="shortcut-btn__icon">⚙️</span>
+          <span class="shortcut-btn__label">Configurações</span>
+        </button>
       </div>
     </div>
 
-    <!-- ── Main Grid ───────────────────────────────────── -->
-    <div class="grid">
-
-      <!-- Expressions Card -->
-      <div class="card animate-in" id="card-expressions">
-        <span class="card__label">Expressions</span>
+    <!-- ── VIEW: EXPRESSIONS ───────────────────────────────── -->
+    <div class="view" id="view-expressions">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Expressões</h2>
+      </div>
+      <div class="card animate-in">
         <div class="expressions-grid">
           <button class="expr-btn expr-btn--active" data-expr="idle" id="expr-idle">
             <span class="expr-btn__emoji">😊</span>
@@ -93,35 +128,32 @@ const char WEB_HTML[] PROGMEM = R"=====(
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- LCD Preview Card -->
-      <div class="card animate-in" id="card-lcd">
-        <span class="card__label">LCD Preview</span>
-        <div class="lcd-preview">
-          <div class="lcd">
-            <div class="lcd__row" id="lcd-row-0"> O O </div>
-            <div class="lcd__row" id="lcd-row-1"> </div>
-          </div>
-          <span class="lcd__label">LCD 1602A — 16×2 characters</span>
-        </div>
+    <!-- ── VIEW: MESSAGES ──────────────────────────────────── -->
+    <div class="view" id="view-messages">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Enviar Mensagem</h2>
       </div>
-
-      <!-- Messages Card -->
-      <div class="card animate-in" id="card-messages">
-        <span class="card__label">Send Message</span>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Send a text message to display on the LCD (max 16 chars, shown for 4 seconds).
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">
+          Digite uma mensagem curta para ser exibida no visor do Trenzin.
         </p>
         <form class="message-form" id="message-form" onsubmit="return false;">
-          <input type="text" class="message-input" id="message-input" placeholder="Type a message..." maxlength="16"
-            autocomplete="off">
-          <button type="submit" class="send-btn" id="send-btn">Send</button>
+          <input type="text" class="message-input" id="message-input" placeholder="Sua mensagem..." maxlength="16" autocomplete="off">
+          <button type="submit" class="send-btn" id="send-btn">Enviar</button>
         </form>
       </div>
+    </div>
 
-      <!-- Pomodoro Timer Card -->
-      <div class="card animate-in" id="card-timer">
-        <span class="card__label">Pomodoro Timer</span>
+    <!-- ── VIEW: POMODORO ──────────────────────────────────── -->
+    <div class="view" id="view-timer">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Pomodoro</h2>
+      </div>
+      <div class="card animate-in">
         <div class="timer">
           <div class="timer__display">
             <svg class="timer__ring" viewBox="0 0 200 200">
@@ -140,15 +172,45 @@ const char WEB_HTML[] PROGMEM = R"=====(
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Serial Monitor Card -->
-      <div class="card card--full animate-in" id="card-serial">
-        <span class="card__label">Serial Monitor</span>
-        <div class="serial-log" id="serial-log">
+    <!-- ── VIEW: ALARM ─────────────────────────────────────── -->
+    <div class="view" id="view-alarm">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Alarme</h2>
+      </div>
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
+          Funcionalidade de Alarme em breve. ⏰
+        </p>
+      </div>
+    </div>
+
+    <!-- ── VIEW: SERIAL MONITOR ────────────────────────────── -->
+    <div class="view" id="view-serial">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Monitor Serial</h2>
+      </div>
+      <div class="card card--full animate-in" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="serial-log" id="serial-log" style="flex: 1;">
           <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...</span>
         </div>
       </div>
+    </div>
 
+    <!-- ── VIEW: SETTINGS ──────────────────────────────────── -->
+    <div class="view" id="view-settings">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Configurações</h2>
+      </div>
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
+          Configurações do dispositivo em breve. ⚙️
+        </p>
+      </div>
     </div>
 
     <!-- ── Footer ──────────────────────────────────────── -->
@@ -170,48 +232,44 @@ const char WEB_HTML[] PROGMEM = R"=====(
 const char WEB_CSS[] PROGMEM = R"=====(
 /* ============================================================
    TRENZIN — Design System
-   Premium dark mode with glassmorphism
+   Braun / Minimalist Dark Mode SPA
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 /* ── CSS Variables ──────────────────────────────────────── */
 :root {
-  --bg-primary: #09090b;
-  --bg-secondary: #111114;
-  --bg-surface: rgba(255, 255, 255, 0.035);
-  --bg-surface-hover: rgba(255, 255, 255, 0.06);
-  --bg-surface-active: rgba(255, 255, 255, 0.08);
-  --bg-glass: rgba(17, 17, 20, 0.75);
+  --bg-primary: #363945;
+  --bg-surface: #464a59;
+  --bg-surface-hover: #505566;
+  --bg-surface-active: #5c6275;
+  
+  --border-subtle: transparent;
+  --border-default: transparent;
+  --border-strong: rgba(255, 255, 255, 0.1);
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.10);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-ghost: rgba(255, 255, 255, 0.3);
 
-  --text-primary: #fafafa;
-  --text-secondary: rgba(255, 255, 255, 0.72);
-  --text-muted: rgba(255, 255, 255, 0.45);
-  --text-ghost: rgba(255, 255, 255, 0.28);
-
-  --accent: #32D74B;
-  --accent-glow: rgba(50, 215, 75, 0.25);
-  --accent-dim: rgba(50, 215, 75, 0.12);
+  --accent: #ffffff;
+  --accent-glow: rgba(255, 255, 255, 0.1);
+  --accent-dim: rgba(255, 255, 255, 0.15);
 
   --danger: #FF453A;
   --warning: #FFD60A;
   --info: #64D2FF;
+  --success: #32D74B;
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
   --radius-full: 9999px;
 
   --transition-fast: 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
   --transition-default: 250ms cubic-bezier(0.25, 0.1, 0.25, 1);
   --transition-slow: 400ms cubic-bezier(0.25, 0.1, 0.25, 1);
-
-  --shadow-glow: 0 0 20px rgba(50, 215, 75, 0.15);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Reset & Base ───────────────────────────────────────── */
@@ -240,57 +298,91 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle background gradient */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60vh;
-  background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(50, 215, 75, 0.06), transparent);
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* ── App Container ──────────────────────────────────────── */
 .app {
   position: relative;
   z-index: 1;
-  max-width: 880px;
+  max-width: 600px; /* Mais estreito para focar na proporção vertical/mobile */
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: 40px 24px 80px;
 }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── SPA Views ──────────────────────────────────────────── */
+.view {
+  display: none;
+  flex-direction: column;
+  animation: fadeInView 0.3s ease-out forwards;
+}
+
+.view--active {
+  display: flex;
+}
+
+@keyframes fadeInView {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.view-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  padding: 8px 12px 8px 0;
+  transition: color var(--transition-fast);
+}
+
+.back-btn:hover {
+  color: var(--text-primary);
+}
+
+.view-header h2 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+/* ── Header (Home) ──────────────────────────────────────── */
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 16px 0 40px;
+  margin-bottom: 24px;
 }
 
 .header__brand {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
 }
 
 .header__logo {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -1.5px;
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1.2px;
   color: var(--text-primary);
+  line-height: 1.1;
 }
 
 .header__logo span {
-  color: var(--accent);
+  font-weight: 400;
 }
 
 .header__tagline {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text-muted);
   font-weight: 500;
+  margin-top: 4px;
 }
 
 /* ── Connection Group ───────────────────────────────────── */
@@ -300,65 +392,30 @@ body::before {
   gap: 12px;
 }
 
-.ip-input {
-  width: 150px;
-  padding: 10px 16px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  outline: none;
-  transition: all var(--transition-default);
-  backdrop-filter: blur(12px);
-}
-
-.ip-input::placeholder {
-  color: var(--text-ghost);
-}
-
-.ip-input:focus {
-  border-color: rgba(50, 215, 75, 0.4);
-  background: var(--bg-surface-hover);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-
-/* ── Connection Button ──────────────────────────────────── */
 .connect-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border: 1px solid var(--border-default);
+  padding: 10px 16px;
+  border: none;
   border-radius: var(--radius-full);
   background: var(--bg-surface);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-default);
-  backdrop-filter: blur(12px);
 }
 
 .connect-btn:hover {
   background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-  transform: translateY(-1px);
+  transform: scale(0.97);
 }
 
 .connect-btn--connected {
-  border-color: rgba(50, 215, 75, 0.3);
   background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.connect-btn--connected:hover {
-  background: rgba(50, 215, 75, 0.18);
-  border-color: rgba(50, 215, 75, 0.45);
+  color: var(--text-primary);
 }
 
 .connect-btn__dot {
@@ -370,93 +427,129 @@ body::before {
 }
 
 .connect-btn--connected .connect-btn__dot {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
-  animation: pulse-dot 2s ease-in-out infinite;
+  background: var(--success);
 }
 
-@keyframes pulse-dot {
-
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 8px var(--accent-glow);
-  }
-
-  50% {
-    opacity: 0.6;
-    box-shadow: 0 0 16px var(--accent-glow);
-  }
+/* ── Status Bar (Home) ──────────────────────────────────── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
-/* ── Section Layout ─────────────────────────────────────── */
-.grid {
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.status-chip--active {
+  background: var(--bg-surface-active);
+  color: var(--text-primary);
+}
+
+/* ── Minimalist LCD Preview (Home) ──────────────────────── */
+.lcd-minimalist {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0 80px;
+}
+
+.lcd__row {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 12px;
+  color: var(--success);
+  text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
+  line-height: 1.6;
+  white-space: pre;
+  min-height: 38px;
+  overflow: hidden;
+  text-align: center;
+}
+
+/* ── Home Shortcuts Grid ────────────────────────────────── */
+.home-shortcuts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
-@media (max-width: 700px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── Card ───────────────────────────────────────────────── */
-.card {
+.shortcut-btn {
+  aspect-ratio: 1; /* Makes them perfectly square */
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  backdrop-filter: blur(16px);
-  transition: border-color var(--transition-default);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.card:hover {
-  border-color: var(--border-default);
+.shortcut-btn:hover {
+  background: var(--bg-surface-hover);
+  transform: scale(0.97);
+}
+
+.shortcut-btn:active {
+  transform: scale(0.94);
+}
+
+.shortcut-btn__icon {
+  font-size: 28px;
+}
+
+.shortcut-btn__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  line-height: 1.2;
+}
+
+/* ── Generic Card (Para as outras views) ────────────────── */
+.card {
+  background: transparent; /* No Braun style, the view itself is clean */
 }
 
 .card--full {
-  grid-column: 1 / -1;
-}
-
-.card__label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-ghost);
-  margin-bottom: 16px;
-}
-
-.card__title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 20px;
-  letter-spacing: -0.3px;
+  flex: 1;
 }
 
 /* ── Expression Buttons ─────────────────────────────────── */
 .expressions-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 .expr-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 18px 8px;
-  border: 1px solid var(--border-subtle);
+  gap: 12px;
+  padding: 24px 16px;
+  border: none;
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   color: var(--text-secondary);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-default);
@@ -464,31 +557,27 @@ body::before {
 
 .expr-btn:hover {
   background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
   color: var(--text-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
+  transform: scale(0.97);
 }
 
 .expr-btn:active {
-  transform: translateY(0);
+  transform: scale(0.94);
 }
 
 .expr-btn--active {
-  background: var(--accent-dim);
-  border-color: rgba(50, 215, 75, 0.35);
-  color: var(--accent);
-  box-shadow: var(--shadow-glow);
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 
 .expr-btn__emoji {
-  font-size: 28px;
+  font-size: 36px;
   line-height: 1;
 }
 
 .expr-btn__label {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
 }
 
 /* ── Pomodoro Timer ─────────────────────────────────────── */
@@ -496,13 +585,14 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 40px;
+  padding-top: 20px;
 }
 
 .timer__display {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 260px;
+  height: 260px;
 }
 
 .timer__ring {
@@ -513,42 +603,26 @@ body::before {
 
 .timer__ring-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.06);
-  stroke-width: 6;
+  stroke: var(--bg-surface);
+  stroke-width: 8;
 }
 
 .timer__ring-progress {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 6;
+  stroke: var(--text-primary);
+  stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 565.48;
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 1s linear;
-  filter: drop-shadow(0 0 8px var(--accent-glow));
 }
 
 .timer__ring-progress--break {
   stroke: var(--info);
-  filter: drop-shadow(0 0 8px rgba(100, 210, 255, 0.25));
 }
 
 .timer__ring-progress--paused {
   stroke: var(--warning);
-  filter: drop-shadow(0 0 8px rgba(255, 214, 10, 0.25));
-  animation: pulse-ring 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-ring {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
 }
 
 .timer__time {
@@ -556,7 +630,7 @@ body::before {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -55%);
-  font-size: 42px;
+  font-size: 56px;
   font-weight: 800;
   letter-spacing: -2px;
   color: var(--text-primary);
@@ -567,17 +641,17 @@ body::before {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, 28px);
-  font-size: 11px;
-  font-weight: 700;
+  transform: translate(-50%, 40px);
+  font-size: 13px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   color: var(--text-muted);
 }
 
 .timer__controls {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -585,14 +659,14 @@ body::before {
 .timer-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border: 1px solid var(--border-default);
+  gap: 8px;
+  padding: 16px 28px;
+  border: none;
   border-radius: var(--radius-full);
   background: var(--bg-surface);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-default);
@@ -600,32 +674,20 @@ body::before {
 
 .timer-btn:hover {
   background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-  transform: translateY(-1px);
+  transform: scale(0.96);
 }
 
 .timer-btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #000;
+  background: var(--text-primary);
+  color: var(--bg-primary);
 }
 
 .timer-btn--primary:hover {
-  background: #3de058;
-  border-color: #3de058;
-  color: #000;
-  box-shadow: var(--shadow-glow);
+  background: #e0e0e0;
 }
 
 .timer-btn--danger {
-  border-color: rgba(255, 69, 58, 0.3);
   color: var(--danger);
-}
-
-.timer-btn--danger:hover {
-  background: rgba(255, 69, 58, 0.1);
-  border-color: rgba(255, 69, 58, 0.5);
 }
 
 .timer-btn:disabled {
@@ -633,62 +695,21 @@ body::before {
   pointer-events: none;
 }
 
-/* ── LCD Preview ────────────────────────────────────────── */
-.lcd-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.lcd {
-  background: #1a3a1a;
-  border: 3px solid #2a2a2a;
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow:
-    inset 0 2px 8px rgba(0, 0, 0, 0.5),
-    0 4px 24px rgba(0, 0, 0, 0.3);
-  width: 100%;
-  max-width: 380px;
-}
-
-.lcd__row {
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 7.5px;
-  color: #7fff7f;
-  text-shadow: 0 0 8px rgba(127, 255, 127, 0.4);
-  line-height: 1.8;
-  white-space: pre;
-  min-height: 28px;
-  overflow: hidden;
-}
-
-.lcd__label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-ghost);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
 /* ── Messages Section ───────────────────────────────────── */
 .message-form {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .message-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 1px solid var(--border-default);
+  padding: 20px;
+  border: none;
   border-radius: var(--radius-md);
   background: var(--bg-surface);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
   outline: none;
   transition: all var(--transition-default);
@@ -699,9 +720,7 @@ body::before {
 }
 
 .message-input:focus {
-  border-color: rgba(50, 215, 75, 0.4);
-  background: var(--bg-surface-hover);
-  box-shadow: 0 0 0 3px var(--accent-dim);
+  background: var(--bg-surface-active);
 }
 
 .message-input:disabled {
@@ -709,27 +728,21 @@ body::before {
 }
 
 .send-btn {
-  padding: 12px 22px;
+  padding: 20px;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--accent);
-  color: #000;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-default);
-  white-space: nowrap;
 }
 
 .send-btn:hover {
-  background: #3de058;
-  box-shadow: var(--shadow-glow);
-  transform: translateY(-1px);
-}
-
-.send-btn:active {
-  transform: translateY(0);
+  background: #e0e0e0;
+  transform: scale(0.98);
 }
 
 .send-btn:disabled {
@@ -739,27 +752,26 @@ body::before {
 
 /* ── Log / Serial Monitor ──────────────────────────────── */
 .serial-log {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
-  max-height: 160px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  height: 400px; /* Fixed height for log */
   overflow-y: auto;
   overflow-x: hidden;
   word-break: break-word;
   font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary);
 }
 
 .serial-log::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .serial-log::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: var(--bg-surface-active);
+  border-radius: 6px;
 }
 
 .serial-log__entry {
@@ -767,7 +779,7 @@ body::before {
 }
 
 .serial-log__entry--rx {
-  color: var(--accent);
+  color: var(--success);
 }
 
 .serial-log__entry--tx {
@@ -783,44 +795,11 @@ body::before {
   font-style: italic;
 }
 
-/* ── Status Bar ─────────────────────────────────────────── */
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.status-chip--active {
-  background: var(--accent-dim);
-  border-color: rgba(50, 215, 75, 0.3);
-  color: var(--accent);
-}
-
-.status-chip__icon {
-  font-size: 14px;
-}
-
 /* ── Footer ─────────────────────────────────────────────── */
 .footer {
   text-align: center;
   padding: 40px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-ghost);
 }
 
@@ -831,100 +810,35 @@ body::before {
 }
 
 .footer a:hover {
-  color: var(--accent);
-}
-
-/* ── Animations ─────────────────────────────────────────── */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-in {
-  animation: fadeInUp 0.5s ease-out forwards;
-}
-
-.animate-in:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.animate-in:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.animate-in:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.animate-in:nth-child(4) {
-  animation-delay: 0.2s;
-}
-
-.animate-in:nth-child(5) {
-  animation-delay: 0.25s;
+  color: var(--text-primary);
 }
 
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 480px) {
   .app {
-    padding: 16px 14px 60px;
+    padding: 30px 20px 60px;
   }
-
-  .header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-    padding-bottom: 28px;
+  
+  .home-shortcuts {
+    grid-template-columns: repeat(2, 1fr);
   }
-
+  
   .expressions-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: 1fr;
   }
-
-  .expr-btn {
-    padding: 14px 6px;
-  }
-
-  .expr-btn__emoji {
-    font-size: 24px;
-  }
-
+  
   .timer__display {
-    width: 170px;
-    height: 170px;
+    width: 220px;
+    height: 220px;
   }
-
+  
   .timer__time {
-    font-size: 36px;
+    font-size: 48px;
   }
-
+  
   .lcd__row {
-    font-size: 16px;
-    letter-spacing: 6px;
-  }
-
-  .message-form {
-    flex-direction: column;
-  }
-
-  .message-input {
-    font-size: 16px;
-  }
-
-  .send-btn {
-    width: 100%;
-  }
-
-  .card {
-    padding: 16px;
+    font-size: 18px;
+    letter-spacing: 8px;
   }
 }
 
@@ -934,18 +848,18 @@ body::before {
 }
 
 .disabled-overlay::after {
-  content: 'Connect Arduino to use';
+  content: 'Conecte o Trenzin';
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(9, 9, 11, 0.7);
+  background: rgba(54, 57, 69, 0.85); /* Coincide com bg-primary */
   backdrop-filter: blur(4px);
-  border-radius: var(--radius-lg);
-  font-size: 13px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-primary);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-default);
@@ -1113,12 +1027,31 @@ let lcdRow1 = '                ';
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// ── SPA Router ─────────────────────────────────────────────
+window.navigateTo = function (viewId) {
+  $$('.view').forEach(view => {
+    view.classList.remove('view--active');
+  });
+  const target = $('#view-' + viewId);
+  if (target) {
+    target.classList.add('view--active');
+  }
+};
+
+function updateDateDisplay() {
+  const date = new Date();
+  const dateString = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const el = $('#date-display');
+  if (el) el.textContent = 'Olá! ' + dateString.charAt(0).toUpperCase() + dateString.slice(1);
+}
+
 // ── Initialize ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
   updateLCDFace(currentExpression);
   updateLCDPreview();
+  updateDateDisplay();
   updateConnectionUI(false);
 
   // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
@@ -1324,8 +1257,9 @@ function updateConnectionUI(connected) {
   }
 
   // Enable/disable controls
-  const overlay = $$('.disabled-overlay');
-  overlay.forEach(el => {
+  const overlayElements = $$('.card, .home-shortcuts');
+  overlayElements.forEach(el => {
+    el.classList.add('disabled-overlay');
     el.classList.toggle('disabled-overlay--active', !connected);
   });
 
