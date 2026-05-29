@@ -83,6 +83,14 @@ class PomodoroTimer {
       longBreak: 15,
       longBreakInterval: 4
     };
+
+    const savedConfig = localStorage.getItem('trenzin_pomodoro_config');
+    if (savedConfig) {
+      try {
+        this.config = { ...this.config, ...JSON.parse(savedConfig) };
+      } catch (e) { }
+    }
+
     this.completedPomodoros = 0;
   }
 
@@ -281,6 +289,8 @@ function setupEventListeners() {
     timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
     timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
 
+    localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
+
     if (timer.state === 'off') {
       updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
     }
@@ -320,7 +330,7 @@ function setupEventListeners() {
     // Optional: browser notification
     if (Notification.permission === 'granted') {
       new Notification('Trenzin', {
-        body: timer.totalSeconds > 5 * 60 ? 'Focus session done!' : 'Break is over!',
+        body: timer.totalSeconds > 5 * 60 ? 'Sessão de foco concluída!' : 'A pausa acabou!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
     }
@@ -332,13 +342,15 @@ async function handleConnect() {
   if (trenzinConn.connected) {
     await trenzinConn.disconnect();
     updateConnectionUI(false);
-    addLog('Disconnected', 'system');
+    addLog('Desconectado', 'system');
     return;
   }
 
-  const ip = window.location.hostname || '192.168.1.15'; // Fallback ip
-  if (!ip) {
-    addLog('Cannot determine IP address', 'error');
+  let ipToConnect;
+  if (window.location.hostname && window.location.hostname !== 'localhost') {
+    ipToConnect = window.location.hostname;
+  } else {
+    addLog('Não foi possível determinar o endereço IP', 'error');
     return;
   }
 
@@ -350,22 +362,28 @@ async function handleConnect() {
 
   trenzinConn.onDisconnect = () => {
     updateConnectionUI(false);
-    addLog('Trenzin disconnected', 'error');
+    addLog('Trenzin desconectado', 'error');
   };
 
-  addLog('Connecting to WebSocket...', 'system');
-  const success = await trenzinConn.connect(ip);
+  addLog('Conectando ao WebSocket...', 'system');
+  const success = await trenzinConn.connect(ipToConnect);
 
   if (success) {
     updateConnectionUI(true);
-    addLog('Connected to Trenzin', 'system');
+    addLog('Conectado ao Trenzin', 'system');
 
-    // Request notification permission
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    trenzinConn.onReceive = (data) => {
+      addLog(data, 'rx');
+      processSerialData(data);
+    };
+
+    trenzinConn.onDisconnect = () => {
+      updateConnectionUI(false);
+      addLog('Trenzin desconectado', 'error');
+    };
   } else {
-    addLog('Connection failed', 'error');
+    updateConnectionUI(false);
+    addLog('Falha na conexão', 'error');
   }
 }
 
@@ -432,10 +450,10 @@ function updateConnectionUI(connected) {
 
   if (connected) {
     btn.classList.add('connect-btn--connected');
-    text.textContent = 'Connected';
+    text.textContent = 'Conectado';
   } else {
     btn.classList.remove('connect-btn--connected');
-    text.textContent = 'Connect Arduino';
+    text.textContent = 'Conectar Trenzin';
   }
 
   // Enable/disable controls
@@ -458,20 +476,20 @@ function updateTimerDisplay() {
   const circumference = 2 * Math.PI * 90; // r=90
 
   // Time display
+  timeEl.textContent = timer.timeString;
   if (timer.state === 'off') {
-    timeEl.textContent = '25:00';
-    stateEl.textContent = 'Ready';
+    stateEl.textContent = 'Pronto';
   } else if (timer.state === 'done') {
-    timeEl.textContent = '00:00';
-    stateEl.textContent = 'Done!';
+    stateEl.textContent = 'Concluído!';
   } else {
-    timeEl.textContent = timer.timeString;
     if (timer.state === 'paused') {
-      stateEl.textContent = 'Paused';
+      stateEl.textContent = 'Pausado';
     } else if (timer.state === 'focus') {
-      stateEl.textContent = 'Focus';
+      stateEl.textContent = 'Foco';
+    } else if (timer.state === 'short-break' || timer.state === 'long-break') {
+      stateEl.textContent = 'Pausa';
     } else if (timer.state === 'break') {
-      stateEl.textContent = 'Break';
+      stateEl.textContent = 'Pausa';
     }
   }
 
