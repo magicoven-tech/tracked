@@ -457,6 +457,23 @@ body {
   color: var(--text-primary);
 }
 
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.icon-btn:hover {
+  opacity: 0.8;
+}
+
 .view-header h2 {
   font-size: 32px;
   font-weight: 700;
@@ -1429,13 +1446,13 @@ function setupEventListeners() {
     timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
 
     localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
-    
+
     if (timer.state === 'off') {
       updateTimerDisplay();
     } else {
       updateTimerDisplay();
     }
-    
+
     $('#pomodoro-modal').classList.remove('active');
 
     // update hardware

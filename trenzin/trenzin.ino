@@ -404,6 +404,13 @@ void processCommand(String cmd) {
       alarmTriggeredToday = false;
     } else if (action == "OFF") {
       alarmEnabled = false;
+      if (tempMessage.indexOf("ALARME!") != -1) {
+        tempMessage = "";
+        tempMsgTimeout = 0;
+        lastDrawnMsg = "";
+        setExpression(EXPR_IDLE);
+        drawStatusLine();
+      }
     }
     sendToClients("ACK:" + cmd);
   }

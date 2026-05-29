@@ -123,6 +123,23 @@ body {
   color: var(--text-primary);
 }
 
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.icon-btn:hover {
+  opacity: 0.8;
+}
+
 .view-header h2 {
   font-size: 32px;
   font-weight: 700;
