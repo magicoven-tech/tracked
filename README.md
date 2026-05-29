@@ -1,4 +1,4 @@
-# 🤖 Trenzin — Seu Companheiro de Mesa Inteligente
+# 🤖 Trenzin — Seu companheiro de mesa inteligente
 
 > Criado com muito amor e café pela [MagicOven](https://magicoven.tech). ☕
 
@@ -26,6 +26,7 @@ O **Trenzin** é um assistente de mesa com uma interface de expressões fofa, in
 **Pinagem padrão (LiquidCrystal):**
 | LCD Pin | Nome | Conexão ESP32 |
 | :---: | :---: | :---: |
+| 3 | V0 | Pino 13 (PWM para Contraste) |
 | 4 | RS | Pino 19 |
 | 6 | E | Pino 23 |
 | 11 | D4 | Pino 18 |
@@ -33,7 +34,7 @@ O **Trenzin** é um assistente de mesa com uma interface de expressões fofa, in
 | 13 | D6 | Pino 16 |
 | 14 | D7 | Pino 15 |
 
-*(Se o seu microcontrolador for diferente, ajuste os pinos no topo do arquivo `taby.ino`)*
+*(Se o seu microcontrolador for diferente, ajuste os pinos no topo do arquivo `trenzin.ino`)*
 
 ---
 
@@ -71,7 +72,7 @@ Uma vez conectado no seu Wi-Fi, controlar o Trenzin é a coisa mais fácil do mu
 
 Se você for modificar o código-fonte, saiba como o projeto está estruturado:
 
-- **`/taby/taby.ino`**: O código principal em C++ responsável pelo controle do display LCD, WebSockets, portal Wi-Fi e Servidor Web HTTP.
+- **`/trenzin/trenzin.ino`**: O código principal em C++ responsável pelo controle do display LCD, WebSockets, portal Wi-Fi e Servidor Web HTTP.
 - **`/web`**: Os arquivos do frontend da aplicação web (`index.html`, `style.css`, `app.js`).
 - **`/build_web.js`**: O empacotador. Todo arquivo que está na pasta web precisa ser minificado e convertido para uma variável C++ para que o ESP32 possa servir a página na rede.
 
@@ -82,7 +83,7 @@ Sempre que fizer qualquer alteração nos arquivos HTML, CSS ou JS da pasta `web
 node build_web.js
 ```
 
-Isso vai ler todos os arquivos da web, empacotá-los e regerar automaticamente o arquivo `/taby/web_assets.h`. Feito isso, basta abrir a Arduino IDE e fazer o *upload* do `taby.ino` novamente.
+Isso vai ler todos os arquivos da web, empacotá-los e regerar automaticamente o arquivo `/trenzin/web_assets.h`. Feito isso, basta abrir a Arduino IDE e fazer o *upload* do `trenzin.ino` novamente.
 
 ---
 

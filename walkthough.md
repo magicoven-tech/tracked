@@ -1,10 +1,10 @@
-Walkthrough — Clone HeyTaby
+Walkthrough — Trenzin
 O que foi criado
-Um clone funcional do HeyTaby usando Arduino Nano + LCD 1602A, com um dashboard web premium para controle via USB.
+Um clone funcional (Trenzin) usando Arduino Nano + LCD 1602A, com um dashboard web premium para controle via USB.
 
 Arquivos Criados
 Firmware Arduino
-taby.ino
+trenzin.ino
 Sketch completo (~570 linhas) com:
 
 Feature	Detalhes
@@ -23,7 +23,7 @@ style.css
 Design system premium dark mode com:
 
 Glassmorphism e backdrop-blur
-Acento verde #32D74B (igual ao Taby original)
+Acento verde #32D74B (inspirado no original)
 Tipografia Inter (Google Fonts)
 Micro-animações: hover scales, glow effects, pulsing dots
 Timer circular SVG com progresso animado
@@ -39,7 +39,7 @@ Como Usar
 1. Upload do Firmware
 Abra o Arduino IDE
 Abra 
-taby.ino
+trenzin.ino
 Selecione Board: Arduino Nano e a porta serial correta
 Clique Upload
 Os olhinhos devem aparecer piscando no LCD!
