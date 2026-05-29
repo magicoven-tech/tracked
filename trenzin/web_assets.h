@@ -534,8 +534,7 @@ body {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 8px;
-  color: var(--success);
-  text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
+  color: var(--text-primary);
   line-height: 1.6;
   white-space: pre;
   min-height: 32px;
@@ -1633,13 +1632,13 @@ function updateLCDFromTimer() {
   if (timer.state === 'off') {
     lcdRow1 = '                ';
   } else if (timer.state === 'focus') {
-    lcdRow1 = `FOCO  ${timer.timeString}`;
+    lcdRow1 = `Foco  ${timer.timeString}`;
   } else if (timer.state === 'break' || timer.state === 'short-break' || timer.state === 'long-break') {
-    lcdRow1 = `PAUSA  ${timer.timeString}`;
+    lcdRow1 = `Pausa  ${timer.timeString}`;
   } else if (timer.state === 'paused') {
-    lcdRow1 = `PAUSADO  ${timer.timeString}`;
+    lcdRow1 = `Pausado  ${timer.timeString}`;
   } else if (timer.state === 'done') {
-    lcdRow1 = 'CONCLUIDO! :D';
+    lcdRow1 = 'Concluído! :D';
   }
 }
 

@@ -245,8 +245,7 @@ body {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 8px;
-  color: var(--success);
-  text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
+  color: var(--text-primary);
   line-height: 1.6;
   white-space: pre;
   min-height: 32px;
