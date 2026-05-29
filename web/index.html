@@ -144,8 +144,7 @@
           <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
           <h2>Pomodoro</h2>
         </div>
-        <button class="icon-btn" id="btn-pomodoro-settings"
-          style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px;">
+        <button class="icon-btn" id="btn-pomodoro-settings">
           <i data-lucide="settings" width="24" height="24"></i>
         </button>
       </div>
@@ -176,15 +175,27 @@
 
     <!-- ── VIEW: ALARM ─────────────────────────────────────── -->
     <div class="view" id="view-alarm">
-      <div class="view-header">
-        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
-        <h2>Alarme</h2>
+      <div class="view-header" style="flex-direction: row; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+          <h2>Alarme</h2>
+        </div>
+        <button class="icon-btn" id="btn-alarm-settings">
+          <i data-lucide="settings" width="24" height="24"></i>
+        </button>
       </div>
       <div class="card animate-in">
-        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20"
-            style="vertical-align: middle; margin-left: 4px;"></i>
-        </p>
+        <div class="timer">
+          <div class="timer__display">
+            <!-- Sem SVG Ring para o alarme -->
+            <span class="timer__time" id="alarm-display-time">07:00</span>
+            <span class="timer__state" id="alarm-state-label">Desativado</span>
+          </div>
+          <div class="timer__controls">
+            <button class="timer-btn timer-btn--primary" id="btn-alarm-toggle"><i data-lucide="bell" width="16"
+                height="16"></i> Ativar alarme</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -268,7 +279,41 @@
     </div>
   </div>
 
-  <!-- App Script -->
+  <!-- ── ALARM SETTINGS MODAL ───────────────────────── -->
+  <div class="modal-overlay" id="alarm-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="width: 24px;"></div> <!-- Spacer for centering -->
+        <h3 class="modal-title">CONFIGURAÇÃO</h3>
+        <button class="modal-close" id="btn-close-alarm-modal">
+          <i data-lucide="x" width="20" height="20"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section-title">
+          <i data-lucide="bell" width="16" height="16"></i>
+          <span>ALARME</span>
+        </div>
+
+        <h4 class="modal-label">Hora do alarme</h4>
+        <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
+          <div class="input-group" style="flex: 1;">
+            <label>Horas</label>
+            <input type="number" id="input-alarm-h" min="0" max="23" value="07">
+          </div>
+          <div style="font-size: 24px; font-weight: 600; padding-bottom: 8px; color: var(--text-muted);">:</div>
+          <div class="input-group" style="flex: 1;">
+            <label>Minutos</label>
+            <input type="number" id="input-alarm-m" min="0" max="59" value="00">
+          </div>
+        </div>
+
+        <button class="save-btn" id="btn-save-alarm">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Icons & JS -->
   <script src="app.js"></script>
   <script>
     lucide.createIcons();

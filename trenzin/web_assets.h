@@ -153,8 +153,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
           <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
           <h2>Pomodoro</h2>
         </div>
-        <button class="icon-btn" id="btn-pomodoro-settings"
-          style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px;">
+        <button class="icon-btn" id="btn-pomodoro-settings">
           <i data-lucide="settings" width="24" height="24"></i>
         </button>
       </div>
@@ -185,15 +184,27 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
     <!-- ── VIEW: ALARM ─────────────────────────────────────── -->
     <div class="view" id="view-alarm">
-      <div class="view-header">
-        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
-        <h2>Alarme</h2>
+      <div class="view-header" style="flex-direction: row; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+          <h2>Alarme</h2>
+        </div>
+        <button class="icon-btn" id="btn-alarm-settings">
+          <i data-lucide="settings" width="24" height="24"></i>
+        </button>
       </div>
       <div class="card animate-in">
-        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20"
-            style="vertical-align: middle; margin-left: 4px;"></i>
-        </p>
+        <div class="timer">
+          <div class="timer__display">
+            <!-- Sem SVG Ring para o alarme -->
+            <span class="timer__time" id="alarm-display-time">07:00</span>
+            <span class="timer__state" id="alarm-state-label">Desativado</span>
+          </div>
+          <div class="timer__controls">
+            <button class="timer-btn timer-btn--primary" id="btn-alarm-toggle"><i data-lucide="bell" width="16"
+                height="16"></i> Ativar alarme</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -277,7 +288,41 @@ const char WEB_HTML[] PROGMEM = R"=====(
     </div>
   </div>
 
-  <!-- App Script -->
+  <!-- ── ALARM SETTINGS MODAL ───────────────────────── -->
+  <div class="modal-overlay" id="alarm-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="width: 24px;"></div> <!-- Spacer for centering -->
+        <h3 class="modal-title">CONFIGURAÇÃO</h3>
+        <button class="modal-close" id="btn-close-alarm-modal">
+          <i data-lucide="x" width="20" height="20"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section-title">
+          <i data-lucide="bell" width="16" height="16"></i>
+          <span>ALARME</span>
+        </div>
+
+        <h4 class="modal-label">Hora do alarme</h4>
+        <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
+          <div class="input-group" style="flex: 1;">
+            <label>Horas</label>
+            <input type="number" id="input-alarm-h" min="0" max="23" value="07">
+          </div>
+          <div style="font-size: 24px; font-weight: 600; padding-bottom: 8px; color: var(--text-muted);">:</div>
+          <div class="input-group" style="flex: 1;">
+            <label>Minutos</label>
+            <input type="number" id="input-alarm-m" min="0" max="59" value="00">
+          </div>
+        </div>
+
+        <button class="save-btn" id="btn-save-alarm">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide Icons & JS -->
   <script src="app.js"></script>
   <script>
     lucide.createIcons();
@@ -1115,6 +1160,7 @@ class WebSocketConnection {
 
         this.socket.onopen = () => {
           this.connected = true;
+          if (this.onConnect) this.onConnect();
           resolve(true);
         };
 
@@ -1377,19 +1423,55 @@ function setupEventListeners() {
   });
 
   $('#btn-save-pomodoro').addEventListener('click', () => {
-    $('#pomodoro-modal').classList.remove('active');
-
-    // Update config
     timer.config.focus = parseInt($('#input-focus-time').value) || 25;
     timer.config.shortBreak = parseInt($('#input-short-break').value) || 5;
     timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
     timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
 
     localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
-
+    
     if (timer.state === 'off') {
-      updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
+      updateTimerDisplay();
+    } else {
+      updateTimerDisplay();
     }
+    
+    $('#pomodoro-modal').classList.remove('active');
+
+    // update hardware
+    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+  });
+
+  // ── Alarm Logic ───────────────────────────────────────────
+  $('#btn-alarm-settings').addEventListener('click', () => {
+    $('#alarm-modal').classList.add('active');
+    $('#input-alarm-h').value = alarmConfig.h;
+    $('#input-alarm-m').value = alarmConfig.m;
+  });
+
+  $('#btn-close-alarm-modal').addEventListener('click', () => {
+    $('#alarm-modal').classList.remove('active');
+  });
+
+  $('#btn-save-alarm').addEventListener('click', () => {
+    let h = parseInt($('#input-alarm-h').value) || 0;
+    let m = parseInt($('#input-alarm-m').value) || 0;
+    if (h < 0) h = 0; if (h > 23) h = 23;
+    if (m < 0) m = 0; if (m > 59) m = 59;
+
+    alarmConfig.h = h;
+    alarmConfig.m = m;
+    saveAlarm();
+    updateAlarmUI();
+    $('#alarm-modal').classList.remove('active');
+    addLog(`ALM:SET:${h}:${m}`, 'tx');
+  });
+
+  $('#btn-alarm-toggle').addEventListener('click', () => {
+    alarmConfig.enabled = !alarmConfig.enabled;
+    saveAlarm();
+    updateAlarmUI();
+    addLog(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF', 'tx');
   });
 
   // Message form
@@ -1450,7 +1532,17 @@ async function handleConnect() {
     return;
   }
 
-  // Set up handlers before connecting so early messages aren't lost
+  trenzinConn.onConnect = () => {
+    updateConnectionUI(true);
+    addLog('Conectado ao Trenzin', 'system');
+    // Send timer config (in case ESP restarted)
+    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+
+    // Send alarm config
+    trenzinConn.send(`ALM:SET:${alarmConfig.h}:${alarmConfig.m}`);
+    trenzinConn.send(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF');
+  };
+
   trenzinConn.onReceive = (data) => {
     addLog(data, 'rx');
     parseArduinoMessage(data);
@@ -1464,20 +1556,7 @@ async function handleConnect() {
   addLog('Conectando ao WebSocket...', 'system');
   const success = await trenzinConn.connect(ipToConnect);
 
-  if (success) {
-    updateConnectionUI(true);
-    addLog('Conectado ao Trenzin', 'system');
-
-    trenzinConn.onReceive = (data) => {
-      addLog(data, 'rx');
-      parseArduinoMessage(data);
-    };
-
-    trenzinConn.onDisconnect = () => {
-      updateConnectionUI(false);
-      addLog('Trenzin desconectado', 'error');
-    };
-  } else {
+  if (!success) {
     updateConnectionUI(false);
     addLog('Falha na conexão', 'error');
   }
@@ -1613,8 +1692,8 @@ function updateTimerDisplay() {
   $('#btn-break').disabled = isRunning || isPaused;
 
   // Pause button text
-  $('#btn-pause').innerHTML = isPaused ? 
-    '<i data-lucide="play" width="16" height="16"></i> Retomar' : 
+  $('#btn-pause').innerHTML = isPaused ?
+    '<i data-lucide="play" width="16" height="16"></i> Retomar' :
     '<i data-lucide="pause" width="16" height="16"></i> Pausar';
   if (window.lucide) window.lucide.createIcons();
 }
@@ -1663,10 +1742,7 @@ function addLog(message, type = 'system') {
     system: '• '
   };
 
-  const time = new Date().toLocaleTimeString('en-US', {
-    hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-
+  const time = new Date().toLocaleTimeString('pt-BR', { hour12: false });
   entry.textContent = `[${time}] ${prefix[type] || ''}${message}\n`;
   log.appendChild(entry);
   log.scrollTop = log.scrollHeight;
@@ -1675,6 +1751,48 @@ function addLog(message, type = 'system') {
   while (log.children.length > 100) {
     log.removeChild(log.firstChild);
   }
+}
+
+// ── Alarm State & UI ──────────────────────────────────────
+let alarmConfig = { h: 7, m: 0, enabled: false };
+
+function initAlarm() {
+  const saved = localStorage.getItem('trenzin_alarm');
+  if (saved) {
+    alarmConfig = JSON.parse(saved);
+  }
+  updateAlarmUI();
+}
+
+function saveAlarm() {
+  localStorage.setItem('trenzin_alarm', JSON.stringify(alarmConfig));
+  if (trenzinConn.connected) {
+    trenzinConn.send(`ALM:SET:${alarmConfig.h}:${alarmConfig.m}`);
+    trenzinConn.send(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF');
+  }
+}
+
+function updateAlarmUI() {
+  const hh = alarmConfig.h.toString().padStart(2, '0');
+  const mm = alarmConfig.m.toString().padStart(2, '0');
+  $('#alarm-display-time').textContent = `${hh}:${mm}`;
+
+  if (alarmConfig.enabled) {
+    $('#alarm-state-label').textContent = 'Ativado';
+    $('#alarm-state-label').style.color = 'var(--success)';
+    $('#btn-alarm-toggle').innerHTML = '<i data-lucide="bell-off" width="16" height="16"></i> Desativar alarme';
+    $('#btn-alarm-toggle').classList.replace('timer-btn--primary', 'timer-btn--danger');
+    if (!$('#btn-alarm-toggle').classList.contains('timer-btn--danger')) {
+      $('#btn-alarm-toggle').classList.add('timer-btn--danger');
+    }
+  } else {
+    $('#alarm-state-label').textContent = 'Desativado';
+    $('#alarm-state-label').style.color = 'var(--text-muted)';
+    $('#btn-alarm-toggle').innerHTML = '<i data-lucide="bell" width="16" height="16"></i> Ativar alarme';
+    $('#btn-alarm-toggle').classList.replace('timer-btn--danger', 'timer-btn--primary');
+  }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 )=====";
 
