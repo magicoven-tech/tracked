@@ -17,6 +17,7 @@
 #include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
+#include <time.h>
 #include <WiFiManager.h>
 
 // ── Pin Configuration ──────────────────────────────────────
@@ -66,6 +67,13 @@ const unsigned long BREAK_DURATION = 5UL * 60;  // 5 min in seconds
 // ── Temporary Message ──────────────────────────────────────
 String tempMessage = "";
 unsigned long tempMsgTimeout = 0;
+
+// ── Alarm State ────────────────────────────────────────────
+bool alarmEnabled = false;
+int alarmHour = 7;
+int alarmMinute = 0;
+bool alarmTriggeredToday = false;
+int currentDay = -1;
 
 // ── Custom Characters (5×8 pixels) ────────────────────────
 // Slot 0: Left eye open
@@ -154,6 +162,9 @@ void setup() {
   if (MDNS.begin("trenzin")) {
     Serial.println("MDNS responder started");
   }
+
+  // Sync time with NTP (UTC-3 for Brazil)
+  configTime(-3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
 
   // Show IP/Hostname on LCD
   lcd.clear();
@@ -277,6 +288,34 @@ void loop() {
       }
     }
   }
+
+  // Alarm Check (every 1 second approx)
+  static unsigned long lastAlarmCheck = 0;
+  if (now - lastAlarmCheck >= 1000) {
+    lastAlarmCheck = now;
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo, 0)) { // 0ms timeout (non-blocking if synced)
+      if (currentDay != timeinfo.tm_mday) {
+        currentDay = timeinfo.tm_mday;
+        alarmTriggeredToday = false;
+      }
+      
+      if (alarmEnabled && !alarmTriggeredToday && 
+          timeinfo.tm_hour == alarmHour && timeinfo.tm_min == alarmMinute) {
+        triggerAlarm();
+        alarmTriggeredToday = true;
+      }
+    }
+  }
+}
+
+void triggerAlarm() {
+  setExpression(EXPR_HAPPY);
+  tempMessage = "    ALARME!     ";
+  tempMsgTimeout = millis() + 60000; // 60 seconds of message
+  lastDrawnMsg = "";
+  drawStatusLine();
+  sendToClients("STATE:ALARM");
 }
 
 // ── Command Parser ─────────────────────────────────────────
@@ -351,6 +390,29 @@ void processCommand(String cmd) {
     lastDrawnMsg = "";
     drawStatusLine();
     sendToClients("ACK:MSG");
+  } else if (cmd.startsWith("ALM:")) {
+    String action = cmd.substring(4);
+    if (action.startsWith("SET:")) {
+      int colonIdx = action.indexOf(':', 4);
+      if (colonIdx != -1) {
+        alarmHour = action.substring(4, colonIdx).toInt();
+        alarmMinute = action.substring(colonIdx + 1).toInt();
+        alarmTriggeredToday = false; // Reset trigger so it can ring if time is now
+      }
+    } else if (action == "ON") {
+      alarmEnabled = true;
+      alarmTriggeredToday = false;
+    } else if (action == "OFF") {
+      alarmEnabled = false;
+      if (tempMessage.indexOf("ALARME!") != -1) {
+        tempMessage = "";
+        tempMsgTimeout = 0;
+        lastDrawnMsg = "";
+        setExpression(EXPR_IDLE);
+        drawStatusLine();
+      }
+    }
+    sendToClients("ACK:" + cmd);
   }
 }
 
