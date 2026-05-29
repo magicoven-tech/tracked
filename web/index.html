@@ -139,9 +139,15 @@
 
     <!-- ── VIEW: POMODORO ──────────────────────────────────── -->
     <div class="view" id="view-timer">
-      <div class="view-header">
-        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
-        <h2>Pomodoro</h2>
+      <div class="view-header" style="flex-direction: row; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+          <h2>Pomodoro</h2>
+        </div>
+        <button class="icon-btn" id="btn-pomodoro-settings"
+          style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px;">
+          <i data-lucide="settings" width="24" height="24"></i>
+        </button>
       </div>
       <div class="card animate-in">
         <div class="timer">
@@ -156,13 +162,13 @@
           </div>
           <div class="timer__controls">
             <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16"
-                height="16"></i> Start Focus</button>
+                height="16"></i> Iniciar foco</button>
             <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i>
-              Pause</button>
+              Pausar</button>
             <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16"
-                height="16"></i> Stop</button>
+                height="16"></i> Parar</button>
             <button class="timer-btn" id="btn-break" disabled><i data-lucide="coffee" width="16" height="16"></i>
-              Break</button>
+              Pausa</button>
           </div>
         </div>
       </div>
@@ -190,7 +196,7 @@
       </div>
       <div class="card card--full animate-in" style="flex: 1; display: flex; flex-direction: column;">
         <div class="serial-log" id="serial-log" style="flex: 1;">
-          <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...</span>
+          <span class="serial-log__entry serial-log__entry--system">• Aguardando conexão...</span>
         </div>
       </div>
     </div>
@@ -212,11 +218,54 @@
     <!-- ── Footer ──────────────────────────────────────── -->
     <footer class="footer">
       <p>
-        TRENZIN — Arduino Nano + LCD 1602A
+        TRENZIN — ESP32 + LCD 1602A
         · by <a href="https://magicoven.tech" target="_blank" rel="noopener">MagicOven</a>
       </p>
     </footer>
 
+  </div>
+
+  <!-- ── POMODORO SETTINGS MODAL ───────────────────────── -->
+  <div class="modal-overlay" id="pomodoro-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="width: 24px;"></div> <!-- Spacer for centering -->
+        <h3 class="modal-title">CONFIGURAÇÃO</h3>
+        <button class="modal-close" id="btn-close-modal">
+          <i data-lucide="x" width="20" height="20"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-section-title">
+          <i data-lucide="clock" width="16" height="16"></i>
+          <span>TEMPORIZADOR</span>
+        </div>
+
+        <h4 class="modal-label">Tempo (minutos)</h4>
+        <div class="modal-grid-3">
+          <div class="input-group">
+            <label>Pomodoro</label>
+            <input type="number" id="input-focus-time" value="25" min="1" max="90">
+          </div>
+          <div class="input-group">
+            <label>Pausa curta</label>
+            <input type="number" id="input-short-break" value="5" min="1" max="30">
+          </div>
+          <div class="input-group">
+            <label>Pausa longa</label>
+            <input type="number" id="input-long-break" value="15" min="1" max="60">
+          </div>
+        </div>
+
+        <div class="modal-row" style="margin-top: 24px; margin-bottom: 24px;">
+          <h4 class="modal-label" style="margin: 0;">Intervalo longo</h4>
+          <input type="number" class="input-small" id="input-long-interval" value="4" min="1" max="10">
+        </div>
+
+        <button class="save-btn" id="btn-save-pomodoro">Salvar</button>
+      </div>
+    </div>
   </div>
 
   <!-- App Script -->

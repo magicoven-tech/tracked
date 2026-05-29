@@ -302,8 +302,13 @@ void processCommand(String cmd) {
     sendToClients("ACK:" + cmd);
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
-    if (action == "START") {
-      startTimer(TIMER_FOCUS, FOCUS_DURATION);
+    if (action.startsWith("FOCUS")) {
+      int duration = FOCUS_DURATION;
+      int colonIdx = action.indexOf(':');
+      if (colonIdx != -1) {
+        duration = action.substring(colonIdx + 1).toInt() * 60;
+      }
+      startTimer(TIMER_FOCUS, duration);
       setExpression(EXPR_FOCUS);
       exprTimeout = 0;
     } else if (action == "PAUSE") {
@@ -326,8 +331,13 @@ void processCommand(String cmd) {
       timerSecondsRemaining = 0;
       setExpression(EXPR_IDLE);
       drawStatusLine();
-    } else if (action == "BREAK") {
-      startTimer(TIMER_BREAK, BREAK_DURATION);
+    } else if (action.startsWith("BREAK") || action.startsWith("LBREAK")) {
+      int duration = BREAK_DURATION;
+      int colonIdx = action.indexOf(':');
+      if (colonIdx != -1) {
+        duration = action.substring(colonIdx + 1).toInt() * 60;
+      }
+      startTimer(TIMER_BREAK, duration);
       setExpression(EXPR_HAPPY);
       exprTimeout = 0;
     }
@@ -485,7 +495,7 @@ void drawStatusLine() {
   case TIMER_FOCUS: {
     unsigned int m = timerSecondsRemaining / 60;
     unsigned int s = timerSecondsRemaining % 60;
-    line = " FOCUS  ";
+    line = "  FOCO  ";
     if (m < 10)
       line += "0";
     line += String(m) + ":";
@@ -497,19 +507,19 @@ void drawStatusLine() {
   case TIMER_FOCUS_PAUSED: {
     unsigned int m = timerSecondsRemaining / 60;
     unsigned int s = timerSecondsRemaining % 60;
-    line = " PAUSED ";
+    line = " PAUSADO ";
     if (m < 10)
       line += "0";
     line += String(m) + ":";
     if (s < 10)
       line += "0";
-    line += String(s) + "   ";
+    line += String(s) + "  ";
     break;
   }
   case TIMER_BREAK: {
     unsigned int m = timerSecondsRemaining / 60;
     unsigned int s = timerSecondsRemaining % 60;
-    line = " BREAK  ";
+    line = " PAUSA  ";
     if (m < 10)
       line += "0";
     line += String(m) + ":";
@@ -521,13 +531,13 @@ void drawStatusLine() {
   case TIMER_BREAK_PAUSED: {
     unsigned int m = timerSecondsRemaining / 60;
     unsigned int s = timerSecondsRemaining % 60;
-    line = " PAUSE  ";
+    line = " PAUSADO ";
     if (m < 10)
       line += "0";
     line += String(m) + ":";
     if (s < 10)
       line += "0";
-    line += String(s) + "   ";
+    line += String(s) + "  ";
     break;
   }
   case TIMER_DONE:
@@ -560,7 +570,7 @@ void onTimerDone() {
     exprTimeout = 0;
     sendToClients("STATE:DONE");
 
-    tempMessage = "  FOCUS DONE!   ";
+    tempMessage = "FOCO CONCLUIDO! ";
     tempMsgTimeout = millis() + 5000;
     lastDrawnMsg = "";
     drawStatusLine();
@@ -569,7 +579,7 @@ void onTimerDone() {
     setExpression(EXPR_IDLE);
     sendToClients("STATE:DONE");
 
-    tempMessage = "  BREAK OVER!   ";
+    tempMessage = " PAUSA ACABOU!  ";
     tempMsgTimeout = millis() + 4000;
     lastDrawnMsg = "";
     drawStatusLine();

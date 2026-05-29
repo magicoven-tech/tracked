@@ -11,7 +11,7 @@
   --bg-surface: #464a59;
   --bg-surface-hover: #505566;
   --bg-surface-active: #5c6275;
-  
+
   --border-subtle: transparent;
   --border-default: transparent;
   --border-strong: rgba(255, 255, 255, 0.1);
@@ -70,7 +70,8 @@ body {
 .app {
   position: relative;
   z-index: 1;
-  max-width: 600px; /* Mais estreito para focar na proporção vertical/mobile */
+  max-width: 600px;
+  /* Mais estreito para focar na proporção vertical/mobile */
   margin: 0 auto;
   padding: 40px 24px 80px;
 }
@@ -87,8 +88,15 @@ body {
 }
 
 @keyframes fadeInView {
-  from { opacity: 0; transform: scale(0.98) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .view-header {
@@ -233,16 +241,14 @@ body {
 }
 
 .lcd__row {
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 12px;
-  color: var(--success);
-  text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 8px;
+  color: var(--text-primary);
   line-height: 1.6;
   white-space: pre;
-  min-height: 38px;
-  overflow: hidden;
+  min-height: 32px;
   text-align: center;
 }
 
@@ -254,7 +260,8 @@ body {
 }
 
 .shortcut-btn {
-  aspect-ratio: 1; /* Makes them perfectly square */
+  aspect-ratio: 1;
+  /* Makes them perfectly square */
   background: var(--bg-surface);
   border: none;
   border-radius: var(--radius-md);
@@ -292,7 +299,8 @@ body {
 
 /* ── Generic Card (Para as outras views) ────────────────── */
 .card {
-  background: transparent; /* No Braun style, the view itself is clean */
+  background: transparent;
+  /* No Braun style, the view itself is clean */
 }
 
 .card--full {
@@ -523,7 +531,8 @@ body {
   background: var(--bg-surface);
   border-radius: var(--radius-md);
   padding: 20px;
-  height: 400px; /* Fixed height for log */
+  height: 400px;
+  /* Fixed height for log */
   overflow-y: auto;
   overflow-x: hidden;
   word-break: break-word;
@@ -586,27 +595,27 @@ body {
   .app {
     padding: 30px 20px 60px;
   }
-  
+
   .home-shortcuts {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .expressions-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .timer__display {
     width: 220px;
     height: 220px;
   }
-  
+
   .timer__time {
     font-size: 48px;
   }
-  
+
   .lcd__row {
-    font-size: 18px;
-    letter-spacing: 8px;
+    font-size: 16px;
+    letter-spacing: 4px;
   }
 }
 
@@ -622,7 +631,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(54, 57, 69, 0.85); /* Coincide com bg-primary */
+  background: rgba(54, 57, 69, 0.85);
+  /* Coincide com bg-primary */
   backdrop-filter: blur(4px);
   border-radius: var(--radius-md);
   font-size: 14px;
@@ -636,4 +646,160 @@ body {
 .disabled-overlay--active::after {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── Pomodoro Modal ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-default);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  transform: translateY(20px);
+  transition: transform var(--transition-default);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-overlay.active .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+}
+
+.modal-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.modal-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.input-group input,
+.input-small {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.input-small {
+  width: 70px;
+  text-align: center;
+}
+
+.input-group input:focus,
+.input-small:focus {
+  background: var(--bg-surface-active);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.save-btn {
+  width: 100%;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-btn:hover {
+  background: var(--bg-surface-active);
+  transform: translateY(-2px);
 }

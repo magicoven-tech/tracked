@@ -69,17 +69,42 @@ class WebSocketConnection {
 // ── Pomodoro Timer (local mirror) ──────────────────────────
 class PomodoroTimer {
   constructor() {
-    this.state = 'off'; // off, focus, break, paused, done
+    this.state = 'off'; // off, focus, break, short-break, long-break, paused, done
+    this.lastState = 'off';
     this.totalSeconds = 0;
     this.remainingSeconds = 0;
     this.interval = null;
     this.onTick = null;
     this.onDone = null;
+
+    this.config = {
+      focus: 25,
+      shortBreak: 5,
+      longBreak: 15,
+      longBreakInterval: 4
+    };
+
+    const savedConfig = localStorage.getItem('trenzin_pomodoro_config');
+    if (savedConfig) {
+      try {
+        this.config = { ...this.config, ...JSON.parse(savedConfig) };
+      } catch (e) { }
+    }
+
+    this.completedPomodoros = 0;
   }
 
   start(type = 'focus') {
     this.stop();
-    this.totalSeconds = type === 'focus' ? 25 * 60 : 5 * 60;
+
+    if (type === 'focus') {
+      this.totalSeconds = this.config.focus * 60;
+    } else if (type === 'long-break') {
+      this.totalSeconds = this.config.longBreak * 60;
+    } else { // 'break' or 'short-break'
+      this.totalSeconds = this.config.shortBreak * 60;
+    }
+
     this.remainingSeconds = this.totalSeconds;
     this.state = type;
     this.interval = setInterval(() => this._tick(), 1000);
@@ -87,7 +112,8 @@ class PomodoroTimer {
   }
 
   pause() {
-    if (this.state === 'focus' || this.state === 'break') {
+    if (this.state !== 'off' && this.state !== 'paused' && this.state !== 'done') {
+      this.lastState = this.state;
       clearInterval(this.interval);
       this.interval = null;
       this.state = 'paused';
@@ -97,7 +123,7 @@ class PomodoroTimer {
 
   resume() {
     if (this.state === 'paused') {
-      this.state = this.remainingSeconds > 5 * 60 ? 'focus' : 'break';
+      this.state = this.lastState !== 'off' ? this.lastState : 'focus';
       this.interval = setInterval(() => this._tick(), 1000);
       if (this.onTick) this.onTick();
     }
@@ -139,6 +165,9 @@ class PomodoroTimer {
   }
 
   get timeString() {
+    if (this.state === 'off') {
+      return `${String(this.config.focus).padStart(2, '0')}:00`;
+    }
     return `${String(this.minutes).padStart(2, '0')}:${String(this.seconds).padStart(2, '0')}`;
   }
 }
@@ -203,8 +232,8 @@ function setupEventListeners() {
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
     timer.start('focus');
-    trenzinConn.send('TMR:START');
-    addLog('TMR:START', 'tx');
+    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+    addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
   });
 
   $('#btn-pause').addEventListener('click', () => {
@@ -226,9 +255,45 @@ function setupEventListeners() {
   });
 
   $('#btn-break').addEventListener('click', () => {
-    timer.start('break');
-    trenzinConn.send('TMR:BREAK');
-    addLog('TMR:BREAK', 'tx');
+    timer.completedPomodoros++;
+    if (timer.completedPomodoros % timer.config.longBreakInterval === 0) {
+      timer.start('long-break');
+      trenzinConn.send(`TMR:LBREAK:${timer.config.longBreak}`);
+      addLog(`TMR:LBREAK:${timer.config.longBreak}`, 'tx');
+    } else {
+      timer.start('short-break');
+      trenzinConn.send(`TMR:BREAK:${timer.config.shortBreak}`);
+      addLog(`TMR:BREAK:${timer.config.shortBreak}`, 'tx');
+    }
+  });
+
+  // Pomodoro Settings Modal
+  $('#btn-pomodoro-settings').addEventListener('click', () => {
+    $('#input-focus-time').value = timer.config.focus;
+    $('#input-short-break').value = timer.config.shortBreak;
+    $('#input-long-break').value = timer.config.longBreak;
+    $('#input-long-interval').value = timer.config.longBreakInterval;
+    $('#pomodoro-modal').classList.add('active');
+  });
+
+  $('#btn-close-modal').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+  });
+
+  $('#btn-save-pomodoro').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+
+    // Update config
+    timer.config.focus = parseInt($('#input-focus-time').value) || 25;
+    timer.config.shortBreak = parseInt($('#input-short-break').value) || 5;
+    timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
+    timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
+
+    localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
+
+    if (timer.state === 'off') {
+      updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
+    }
   });
 
   // Message form
@@ -265,7 +330,7 @@ function setupEventListeners() {
     // Optional: browser notification
     if (Notification.permission === 'granted') {
       new Notification('Trenzin', {
-        body: timer.totalSeconds > 5 * 60 ? 'Focus session done!' : 'Break is over!',
+        body: timer.totalSeconds > 5 * 60 ? 'Sessão de foco concluída!' : 'A pausa acabou!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
     }
@@ -277,13 +342,15 @@ async function handleConnect() {
   if (trenzinConn.connected) {
     await trenzinConn.disconnect();
     updateConnectionUI(false);
-    addLog('Disconnected', 'system');
+    addLog('Desconectado', 'system');
     return;
   }
 
-  const ip = window.location.hostname || '192.168.1.15'; // Fallback ip
-  if (!ip) {
-    addLog('Cannot determine IP address', 'error');
+  let ipToConnect;
+  if (window.location.hostname && window.location.hostname !== 'localhost') {
+    ipToConnect = window.location.hostname;
+  } else {
+    addLog('Não foi possível determinar o endereço IP', 'error');
     return;
   }
 
@@ -295,22 +362,28 @@ async function handleConnect() {
 
   trenzinConn.onDisconnect = () => {
     updateConnectionUI(false);
-    addLog('Trenzin disconnected', 'error');
+    addLog('Trenzin desconectado', 'error');
   };
 
-  addLog('Connecting to WebSocket...', 'system');
-  const success = await trenzinConn.connect(ip);
+  addLog('Conectando ao WebSocket...', 'system');
+  const success = await trenzinConn.connect(ipToConnect);
 
   if (success) {
     updateConnectionUI(true);
-    addLog('Connected to Trenzin', 'system');
+    addLog('Conectado ao Trenzin', 'system');
 
-    // Request notification permission
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    trenzinConn.onReceive = (data) => {
+      addLog(data, 'rx');
+      parseArduinoMessage(data);
+    };
+
+    trenzinConn.onDisconnect = () => {
+      updateConnectionUI(false);
+      addLog('Trenzin desconectado', 'error');
+    };
   } else {
-    addLog('Connection failed', 'error');
+    updateConnectionUI(false);
+    addLog('Falha na conexão', 'error');
   }
 }
 
@@ -377,10 +450,10 @@ function updateConnectionUI(connected) {
 
   if (connected) {
     btn.classList.add('connect-btn--connected');
-    text.textContent = 'Connected';
+    text.textContent = 'Conectado';
   } else {
     btn.classList.remove('connect-btn--connected');
-    text.textContent = 'Connect Arduino';
+    text.textContent = 'Conectar Trenzin';
   }
 
   // Enable/disable controls
@@ -403,20 +476,20 @@ function updateTimerDisplay() {
   const circumference = 2 * Math.PI * 90; // r=90
 
   // Time display
+  timeEl.textContent = timer.timeString;
   if (timer.state === 'off') {
-    timeEl.textContent = '25:00';
-    stateEl.textContent = 'Ready';
+    stateEl.textContent = 'Pronto';
   } else if (timer.state === 'done') {
-    timeEl.textContent = '00:00';
-    stateEl.textContent = 'Done!';
+    stateEl.textContent = 'Concluído!';
   } else {
-    timeEl.textContent = timer.timeString;
     if (timer.state === 'paused') {
-      stateEl.textContent = 'Paused';
+      stateEl.textContent = 'Pausado';
     } else if (timer.state === 'focus') {
-      stateEl.textContent = 'Focus';
+      stateEl.textContent = 'Foco';
+    } else if (timer.state === 'short-break' || timer.state === 'long-break') {
+      stateEl.textContent = 'Pausa';
     } else if (timer.state === 'break') {
-      stateEl.textContent = 'Break';
+      stateEl.textContent = 'Pausa';
     }
   }
 
@@ -444,7 +517,10 @@ function updateTimerDisplay() {
   $('#btn-break').disabled = isRunning || isPaused;
 
   // Pause button text
-  $('#btn-pause').textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+  $('#btn-pause').innerHTML = isPaused ?
+    '<i data-lucide="play" width="16" height="16"></i> Retomar' :
+    '<i data-lucide="pause" width="16" height="16"></i> Pausar';
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function updateLCDFace(expr) {
@@ -463,20 +539,19 @@ function updateLCDFromTimer() {
   if (timer.state === 'off') {
     lcdRow1 = '                ';
   } else if (timer.state === 'focus') {
-    lcdRow1 = ` FOCUS  ${timer.timeString}   `;
-  } else if (timer.state === 'break') {
-    lcdRow1 = ` BREAK  ${timer.timeString}   `;
+    lcdRow1 = `Foco  ${timer.timeString}`;
+  } else if (timer.state === 'break' || timer.state === 'short-break' || timer.state === 'long-break') {
+    lcdRow1 = `Pausa  ${timer.timeString}`;
   } else if (timer.state === 'paused') {
-    lcdRow1 = ` PAUSED ${timer.timeString}   `;
+    lcdRow1 = `Pausado  ${timer.timeString}`;
   } else if (timer.state === 'done') {
-    lcdRow1 = '   DONE! :D     ';
+    lcdRow1 = 'Concluído! :D';
   }
-  lcdRow1 = lcdRow1.substring(0, 16).padEnd(16, ' ');
 }
 
 function updateLCDPreview() {
-  $('#lcd-row-0').textContent = lcdRow0.substring(0, 16);
-  $('#lcd-row-1').textContent = lcdRow1.substring(0, 16);
+  $('#lcd-row-0').textContent = lcdRow0.trim();
+  $('#lcd-row-1').textContent = lcdRow1.trim();
 }
 
 // ── Serial Log ─────────────────────────────────────────────
