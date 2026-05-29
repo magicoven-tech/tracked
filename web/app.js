@@ -231,21 +231,21 @@ function setupEventListeners() {
 
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
+    timer.start('focus');
+    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+    addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
+  });
+
+  $('#btn-pause').addEventListener('click', () => {
     if (timer.state === 'paused') {
       timer.resume();
       trenzinConn.send('TMR:RESUME');
       addLog('TMR:RESUME', 'tx');
     } else {
-      timer.start('focus');
-      trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
-      addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
+      timer.pause();
+      trenzinConn.send('TMR:PAUSE');
+      addLog('TMR:PAUSE', 'tx');
     }
-  });
-
-  $('#btn-pause').addEventListener('click', () => {
-    timer.pause();
-    trenzinConn.send('TMR:PAUSE');
-    addLog('TMR:PAUSE', 'tx');
   });
 
   $('#btn-stop').addEventListener('click', () => {
@@ -517,7 +517,10 @@ function updateTimerDisplay() {
   $('#btn-break').disabled = isRunning || isPaused;
 
   // Pause button text
-  $('#btn-pause').textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+  $('#btn-pause').innerHTML = isPaused ?
+    '<i data-lucide="play" width="16" height="16"></i> Retomar' :
+    '<i data-lucide="pause" width="16" height="16"></i> Pausar';
+  if (window.lucide) window.lucide.createIcons();
 }
 
 function updateLCDFace(expr) {

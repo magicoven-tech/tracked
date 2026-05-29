@@ -495,7 +495,7 @@ void drawStatusLine() {
   case TIMER_FOCUS: {
     unsigned int m = timerSecondsRemaining / 60;
     unsigned int s = timerSecondsRemaining % 60;
-    line = " FOCO   ";
+    line = "  FOCO  ";
     if (m < 10)
       line += "0";
     line += String(m) + ":";
