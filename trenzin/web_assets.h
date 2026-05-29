@@ -17,10 +17,11 @@ const char WEB_HTML[] PROGMEM = R"=====(
   <meta name="description"
     content="Control your Trenzin desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
 
-  <!-- Fonts -->
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
@@ -50,13 +51,10 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
       <div class="status-bar animate-in" id="status-bar">
         <div class="status-chip" id="status-connection">
-          <span class="status-chip__icon">⚡</span>
+          <span class="status-chip__icon"><i data-lucide="zap" width="16" height="16"></i></span>
           <span class="status-chip__text">Offline</span>
         </div>
-        <div class="status-chip" id="status-expression">
-          <span class="status-chip__icon">😊</span>
-          <span class="status-chip__text">Idle</span>
-        </div>
+
       </div>
 
       <!-- Minimalist LCD Preview -->
@@ -68,27 +66,27 @@ const char WEB_HTML[] PROGMEM = R"=====(
       <!-- Home Grid Shortcuts -->
       <div class="home-shortcuts animate-in">
         <button class="shortcut-btn" onclick="navigateTo('expressions')">
-          <span class="shortcut-btn__icon">😊</span>
+          <span class="shortcut-btn__icon"><i data-lucide="smile" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Expressões</span>
         </button>
         <button class="shortcut-btn" onclick="navigateTo('messages')">
-          <span class="shortcut-btn__icon">💬</span>
+          <span class="shortcut-btn__icon"><i data-lucide="message-square" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Mensagem</span>
         </button>
         <button class="shortcut-btn" onclick="navigateTo('timer')">
-          <span class="shortcut-btn__icon">⏱️</span>
+          <span class="shortcut-btn__icon"><i data-lucide="timer" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Pomodoro</span>
         </button>
         <button class="shortcut-btn" onclick="navigateTo('alarm')">
-          <span class="shortcut-btn__icon">⏰</span>
+          <span class="shortcut-btn__icon"><i data-lucide="alarm-clock" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Alarme</span>
         </button>
         <button class="shortcut-btn" onclick="navigateTo('serial')">
-          <span class="shortcut-btn__icon">💻</span>
+          <span class="shortcut-btn__icon"><i data-lucide="terminal" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Serial Monitor</span>
         </button>
         <button class="shortcut-btn" onclick="navigateTo('settings')">
-          <span class="shortcut-btn__icon">⚙️</span>
+          <span class="shortcut-btn__icon"><i data-lucide="settings" width="32" height="32"></i></span>
           <span class="shortcut-btn__label">Configurações</span>
         </button>
       </div>
@@ -103,27 +101,27 @@ const char WEB_HTML[] PROGMEM = R"=====(
       <div class="card animate-in">
         <div class="expressions-grid">
           <button class="expr-btn expr-btn--active" data-expr="idle" id="expr-idle">
-            <span class="expr-btn__emoji">😊</span>
+            <span class="expr-btn__emoji"><i data-lucide="smile" width="36" height="36"></i></span>
             <span class="expr-btn__label">Idle</span>
           </button>
           <button class="expr-btn" data-expr="happy" id="expr-happy">
-            <span class="expr-btn__emoji">😄</span>
+            <span class="expr-btn__emoji"><i data-lucide="laugh" width="36" height="36"></i></span>
             <span class="expr-btn__label">Happy</span>
           </button>
           <button class="expr-btn" data-expr="sad" id="expr-sad">
-            <span class="expr-btn__emoji">😢</span>
+            <span class="expr-btn__emoji"><i data-lucide="frown" width="36" height="36"></i></span>
             <span class="expr-btn__label">Sad</span>
           </button>
           <button class="expr-btn" data-expr="angry" id="expr-angry">
-            <span class="expr-btn__emoji">😠</span>
+            <span class="expr-btn__emoji"><i data-lucide="angry" width="36" height="36"></i></span>
             <span class="expr-btn__label">Angry</span>
           </button>
           <button class="expr-btn" data-expr="focus" id="expr-focus">
-            <span class="expr-btn__emoji">🎯</span>
+            <span class="expr-btn__emoji"><i data-lucide="target" width="36" height="36"></i></span>
             <span class="expr-btn__label">Focus</span>
           </button>
           <button class="expr-btn" data-expr="sleep" id="expr-sleep">
-            <span class="expr-btn__emoji">😴</span>
+            <span class="expr-btn__emoji"><i data-lucide="moon" width="36" height="36"></i></span>
             <span class="expr-btn__label">Sleep</span>
           </button>
         </div>
@@ -165,10 +163,10 @@ const char WEB_HTML[] PROGMEM = R"=====(
             <span class="timer__state" id="timer-state">Ready</span>
           </div>
           <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
-            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
-            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
-            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
+            <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16" height="16"></i> Start Focus</button>
+            <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i> Pause</button>
+            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16" height="16"></i> Stop</button>
+            <button class="timer-btn" id="btn-break" disabled><i data-lucide="coffee" width="16" height="16"></i> Break</button>
           </div>
         </div>
       </div>
@@ -182,7 +180,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </div>
       <div class="card animate-in">
         <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Funcionalidade de Alarme em breve. ⏰
+          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20" style="vertical-align: middle; margin-left: 4px;"></i>
         </p>
       </div>
     </div>
@@ -208,7 +206,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </div>
       <div class="card animate-in">
         <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Configurações do dispositivo em breve. ⚙️
+          Configurações do dispositivo em breve. <i data-lucide="settings" width="20" height="20" style="vertical-align: middle; margin-left: 4px;"></i>
         </p>
       </div>
     </div>
@@ -225,6 +223,9 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
   <!-- App Script -->
   <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 
 </html>)=====";
@@ -1138,7 +1139,7 @@ function setupEventListeners() {
     // Optional: browser notification
     if (Notification.permission === 'granted') {
       new Notification('Trenzin', {
-        body: timer.totalSeconds > 5 * 60 ? '🎉 Focus session done!' : '☕ Break is over!',
+        body: timer.totalSeconds > 5 * 60 ? 'Focus session done!' : 'Break is over!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
     }

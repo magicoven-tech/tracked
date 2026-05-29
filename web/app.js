@@ -265,7 +265,7 @@ function setupEventListeners() {
     // Optional: browser notification
     if (Notification.permission === 'granted') {
       new Notification('Trenzin', {
-        body: timer.totalSeconds > 5 * 60 ? '🎉 Focus session done!' : '☕ Break is over!',
+        body: timer.totalSeconds > 5 * 60 ? 'Focus session done!' : 'Break is over!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
     }
