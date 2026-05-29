@@ -374,7 +374,7 @@ async function handleConnect() {
 
     trenzinConn.onReceive = (data) => {
       addLog(data, 'rx');
-      processSerialData(data);
+      parseArduinoMessage(data);
     };
 
     trenzinConn.onDisconnect = () => {
@@ -536,20 +536,19 @@ function updateLCDFromTimer() {
   if (timer.state === 'off') {
     lcdRow1 = '                ';
   } else if (timer.state === 'focus') {
-    lcdRow1 = ` FOCUS  ${timer.timeString}   `;
-  } else if (timer.state === 'break') {
-    lcdRow1 = ` BREAK  ${timer.timeString}   `;
+    lcdRow1 = `FOCO  ${timer.timeString}`;
+  } else if (timer.state === 'break' || timer.state === 'short-break' || timer.state === 'long-break') {
+    lcdRow1 = `PAUSA  ${timer.timeString}`;
   } else if (timer.state === 'paused') {
-    lcdRow1 = ` PAUSED ${timer.timeString}   `;
+    lcdRow1 = `PAUSADO  ${timer.timeString}`;
   } else if (timer.state === 'done') {
-    lcdRow1 = '   DONE! :D     ';
+    lcdRow1 = 'CONCLUIDO! :D';
   }
-  lcdRow1 = lcdRow1.substring(0, 16).padEnd(16, ' ');
 }
 
 function updateLCDPreview() {
-  $('#lcd-row-0').textContent = lcdRow0.substring(0, 16);
-  $('#lcd-row-1').textContent = lcdRow1.substring(0, 16);
+  $('#lcd-row-0').textContent = lcdRow0.trim();
+  $('#lcd-row-1').textContent = lcdRow1.trim();
 }
 
 // ── Serial Log ─────────────────────────────────────────────

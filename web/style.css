@@ -241,16 +241,15 @@ body {
 }
 
 .lcd__row {
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 12px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 8px;
   color: var(--success);
   text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
   line-height: 1.6;
   white-space: pre;
-  min-height: 38px;
-  overflow: hidden;
+  min-height: 32px;
   text-align: center;
 }
 
@@ -616,8 +615,8 @@ body {
   }
 
   .lcd__row {
-    font-size: 18px;
-    letter-spacing: 8px;
+    font-size: 16px;
+    letter-spacing: 4px;
   }
 }
 

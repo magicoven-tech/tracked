@@ -171,7 +171,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
           </div>
           <div class="timer__controls">
             <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16"
-                height="16"></i> Iniciar Foco</button>
+                height="16"></i> Iniciar foco</button>
             <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i>
               Pausar</button>
             <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16"
@@ -530,16 +530,15 @@ body {
 }
 
 .lcd__row {
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 12px;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 8px;
   color: var(--success);
   text-shadow: 0 0 12px rgba(50, 215, 75, 0.6);
   line-height: 1.6;
   white-space: pre;
-  min-height: 38px;
-  overflow: hidden;
+  min-height: 32px;
   text-align: center;
 }
 
@@ -905,8 +904,8 @@ body {
   }
 
   .lcd__row {
-    font-size: 18px;
-    letter-spacing: 8px;
+    font-size: 16px;
+    letter-spacing: 4px;
   }
 }
 
@@ -1181,14 +1180,14 @@ class PomodoroTimer {
       longBreak: 15,
       longBreakInterval: 4
     };
-    
+
     const savedConfig = localStorage.getItem('trenzin_pomodoro_config');
     if (savedConfig) {
       try {
         this.config = { ...this.config, ...JSON.parse(savedConfig) };
-      } catch(e) {}
+      } catch (e) { }
     }
-    
+
     this.completedPomodoros = 0;
   }
 
@@ -1380,15 +1379,15 @@ function setupEventListeners() {
 
   $('#btn-save-pomodoro').addEventListener('click', () => {
     $('#pomodoro-modal').classList.remove('active');
-    
+
     // Update config
     timer.config.focus = parseInt($('#input-focus-time').value) || 25;
     timer.config.shortBreak = parseInt($('#input-short-break').value) || 5;
     timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
     timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
-    
+
     localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
-    
+
     if (timer.state === 'off') {
       updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
     }
@@ -1465,16 +1464,16 @@ async function handleConnect() {
 
   addLog('Conectando ao WebSocket...', 'system');
   const success = await trenzinConn.connect(ipToConnect);
-  
+
   if (success) {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-    
+
     trenzinConn.onReceive = (data) => {
       addLog(data, 'rx');
-      processSerialData(data);
+      parseArduinoMessage(data);
     };
-    
+
     trenzinConn.onDisconnect = () => {
       updateConnectionUI(false);
       addLog('Trenzin desconectado', 'error');
@@ -1634,20 +1633,19 @@ function updateLCDFromTimer() {
   if (timer.state === 'off') {
     lcdRow1 = '                ';
   } else if (timer.state === 'focus') {
-    lcdRow1 = ` FOCUS  ${timer.timeString}   `;
-  } else if (timer.state === 'break') {
-    lcdRow1 = ` BREAK  ${timer.timeString}   `;
+    lcdRow1 = `FOCO  ${timer.timeString}`;
+  } else if (timer.state === 'break' || timer.state === 'short-break' || timer.state === 'long-break') {
+    lcdRow1 = `PAUSA  ${timer.timeString}`;
   } else if (timer.state === 'paused') {
-    lcdRow1 = ` PAUSED ${timer.timeString}   `;
+    lcdRow1 = `PAUSADO  ${timer.timeString}`;
   } else if (timer.state === 'done') {
-    lcdRow1 = '   DONE! :D     ';
+    lcdRow1 = 'CONCLUIDO! :D';
   }
-  lcdRow1 = lcdRow1.substring(0, 16).padEnd(16, ' ');
 }
 
 function updateLCDPreview() {
-  $('#lcd-row-0').textContent = lcdRow0.substring(0, 16);
-  $('#lcd-row-1').textContent = lcdRow1.substring(0, 16);
+  $('#lcd-row-0').textContent = lcdRow0.trim();
+  $('#lcd-row-1').textContent = lcdRow1.trim();
 }
 
 // ── Serial Log ─────────────────────────────────────────────
