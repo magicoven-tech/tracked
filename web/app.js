@@ -154,12 +154,31 @@ let lcdRow1 = '                ';
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+// ── SPA Router ─────────────────────────────────────────────
+window.navigateTo = function (viewId) {
+  $$('.view').forEach(view => {
+    view.classList.remove('view--active');
+  });
+  const target = $('#view-' + viewId);
+  if (target) {
+    target.classList.add('view--active');
+  }
+};
+
+function updateDateDisplay() {
+  const date = new Date();
+  const dateString = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const el = $('#date-display');
+  if (el) el.textContent = 'Olá! ' + dateString.charAt(0).toUpperCase() + dateString.slice(1);
+}
+
 // ── Initialize ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
   updateLCDFace(currentExpression);
   updateLCDPreview();
+  updateDateDisplay();
   updateConnectionUI(false);
 
   // Auto connect se estiver rodando no próprio ESP32 ou com IP via URL
@@ -246,7 +265,7 @@ function setupEventListeners() {
     // Optional: browser notification
     if (Notification.permission === 'granted') {
       new Notification('Trenzin', {
-        body: timer.totalSeconds > 5 * 60 ? '🎉 Focus session done!' : '☕ Break is over!',
+        body: timer.totalSeconds > 5 * 60 ? 'Focus session done!' : 'Break is over!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
     }
@@ -365,8 +384,9 @@ function updateConnectionUI(connected) {
   }
 
   // Enable/disable controls
-  const overlay = $$('.disabled-overlay');
-  overlay.forEach(el => {
+  const overlayElements = $$('.card, .home-shortcuts');
+  overlayElements.forEach(el => {
+    el.classList.add('disabled-overlay');
     el.classList.toggle('disabled-overlay--active', !connected);
   });
 

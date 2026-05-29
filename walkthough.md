@@ -17,16 +17,21 @@ Non-blocking	Usa millis() em vez de delay() — tudo roda fluido
 Máquina de estados	Timer: OFF → FOCUS → PAUSED → BREAK → DONE
 App Web (Dashboard)
 index.html
-Página única com layout responsivo. Seções: header, status bar, expressões, timer, LCD preview, messages, serial monitor.
+Página Single Page Application (SPA) com navegação dinâmica (views). Seções separadas:
+Home: Grid de atalhos e preview de expressão minimalista
+Expressões: Grade de controle facial
+Pomodoro Timer
+Message Form
+Monitor Serial
+Configurações e Alarmes (vazios/placeholders)
 
 style.css
-Design system premium dark mode com:
-
-Glassmorphism e backdrop-blur
-Acento verde #32D74B (inspirado no original)
+Design system minimalista flat inspirado em Dieter Rams/Braun e iOS:
+Fundo dark com tons cinza/azulado (#363945)
+Acento branco suave e verde neon (#32D74B) apenas no LCD
+Botões quadrados de navegação ("tiles")
 Tipografia Inter (Google Fonts)
-Micro-animações: hover scales, glow effects, pulsing dots
-Timer circular SVG com progresso animado
+Transições de fadeInView suaves e navegação sem reload
 Preview LCD estilizado (fundo verde escuro, texto #7fff7f)
 app.js
 Lógica completa (~520 linhas):

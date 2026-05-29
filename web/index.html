@@ -8,10 +8,11 @@
   <meta name="description"
     content="Control your Trenzin desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
 
-  <!-- Fonts -->
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
@@ -24,95 +25,125 @@
 <body>
   <div class="app">
 
-    <!-- ── Header ──────────────────────────────────────── -->
-    <header class="header animate-in" id="header">
-      <div class="header__brand">
-        <h1 class="header__logo">TREN<span>ZIN</span></h1>
-        <span class="header__tagline">Seu companheiro de mesa</span>
-      </div>
-      <div class="connection-group">
+    <!-- ── VIEW: HOME ──────────────────────────────────────── -->
+    <div class="view view--active" id="view-home">
+      <header class="header animate-in" id="header">
+        <div class="header__brand">
+          <h1 class="header__logo">TREN<span>ZIN</span></h1>
+          <span class="header__tagline" id="date-display">Seu companheiro de mesa</span>
+        </div>
+        <div class="connection-group">
+          <button class="connect-btn" id="connect-btn">
+            <span class="connect-btn__dot"></span>
+            <span class="connect-btn__text">Connect Trenzin</span>
+          </button>
+        </div>
+      </header>
 
-        <button class="connect-btn" id="connect-btn">
-          <span class="connect-btn__dot"></span>
-          <span class="connect-btn__text">Connect Trenzin</span>
+      <div class="status-bar animate-in" id="status-bar">
+        <div class="status-chip" id="status-connection">
+          <span class="status-chip__icon"><i data-lucide="zap" width="16" height="16"></i></span>
+          <span class="status-chip__text">Offline</span>
+        </div>
+
+      </div>
+
+      <!-- Minimalist LCD Preview -->
+      <div class="lcd-minimalist animate-in" id="lcd-minimalist">
+        <div class="lcd__row" id="lcd-row-0"> O O </div>
+        <div class="lcd__row" id="lcd-row-1"> </div>
+      </div>
+
+      <!-- Home Grid Shortcuts -->
+      <div class="home-shortcuts animate-in">
+        <button class="shortcut-btn" onclick="navigateTo('expressions')">
+          <span class="shortcut-btn__icon"><i data-lucide="smile" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Expressões</span>
         </button>
-      </div>
-    </header>
-
-    <!-- ── Status Bar ──────────────────────────────────── -->
-    <div class="status-bar animate-in" id="status-bar">
-      <div class="status-chip" id="status-connection">
-        <span class="status-chip__icon">⚡</span>
-        <span class="status-chip__text">Offline</span>
-      </div>
-      <div class="status-chip" id="status-expression">
-        <span class="status-chip__icon">😊</span>
-        <span class="status-chip__text">Idle</span>
+        <button class="shortcut-btn" onclick="navigateTo('messages')">
+          <span class="shortcut-btn__icon"><i data-lucide="message-square" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Mensagem</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('timer')">
+          <span class="shortcut-btn__icon"><i data-lucide="timer" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Pomodoro</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('alarm')">
+          <span class="shortcut-btn__icon"><i data-lucide="alarm-clock" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Alarme</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('serial')">
+          <span class="shortcut-btn__icon"><i data-lucide="terminal" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Serial Monitor</span>
+        </button>
+        <button class="shortcut-btn" onclick="navigateTo('settings')">
+          <span class="shortcut-btn__icon"><i data-lucide="settings" width="32" height="32"></i></span>
+          <span class="shortcut-btn__label">Configurações</span>
+        </button>
       </div>
     </div>
 
-    <!-- ── Main Grid ───────────────────────────────────── -->
-    <div class="grid">
-
-      <!-- Expressions Card -->
-      <div class="card animate-in" id="card-expressions">
-        <span class="card__label">Expressions</span>
+    <!-- ── VIEW: EXPRESSIONS ───────────────────────────────── -->
+    <div class="view" id="view-expressions">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Expressões</h2>
+      </div>
+      <div class="card animate-in">
         <div class="expressions-grid">
           <button class="expr-btn expr-btn--active" data-expr="idle" id="expr-idle">
-            <span class="expr-btn__emoji">😊</span>
+            <span class="expr-btn__emoji"><i data-lucide="smile" width="36" height="36"></i></span>
             <span class="expr-btn__label">Idle</span>
           </button>
           <button class="expr-btn" data-expr="happy" id="expr-happy">
-            <span class="expr-btn__emoji">😄</span>
+            <span class="expr-btn__emoji"><i data-lucide="laugh" width="36" height="36"></i></span>
             <span class="expr-btn__label">Happy</span>
           </button>
           <button class="expr-btn" data-expr="sad" id="expr-sad">
-            <span class="expr-btn__emoji">😢</span>
+            <span class="expr-btn__emoji"><i data-lucide="frown" width="36" height="36"></i></span>
             <span class="expr-btn__label">Sad</span>
           </button>
           <button class="expr-btn" data-expr="angry" id="expr-angry">
-            <span class="expr-btn__emoji">😠</span>
+            <span class="expr-btn__emoji"><i data-lucide="angry" width="36" height="36"></i></span>
             <span class="expr-btn__label">Angry</span>
           </button>
           <button class="expr-btn" data-expr="focus" id="expr-focus">
-            <span class="expr-btn__emoji">🎯</span>
+            <span class="expr-btn__emoji"><i data-lucide="target" width="36" height="36"></i></span>
             <span class="expr-btn__label">Focus</span>
           </button>
           <button class="expr-btn" data-expr="sleep" id="expr-sleep">
-            <span class="expr-btn__emoji">😴</span>
+            <span class="expr-btn__emoji"><i data-lucide="moon" width="36" height="36"></i></span>
             <span class="expr-btn__label">Sleep</span>
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- LCD Preview Card -->
-      <div class="card animate-in" id="card-lcd">
-        <span class="card__label">LCD Preview</span>
-        <div class="lcd-preview">
-          <div class="lcd">
-            <div class="lcd__row" id="lcd-row-0"> O O </div>
-            <div class="lcd__row" id="lcd-row-1"> </div>
-          </div>
-          <span class="lcd__label">LCD 1602A — 16×2 characters</span>
-        </div>
+    <!-- ── VIEW: MESSAGES ──────────────────────────────────── -->
+    <div class="view" id="view-messages">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Enviar Mensagem</h2>
       </div>
-
-      <!-- Messages Card -->
-      <div class="card animate-in" id="card-messages">
-        <span class="card__label">Send Message</span>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          Send a text message to display on the LCD (max 16 chars, shown for 4 seconds).
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">
+          Digite uma mensagem curta para ser exibida no visor do Trenzin.
         </p>
         <form class="message-form" id="message-form" onsubmit="return false;">
-          <input type="text" class="message-input" id="message-input" placeholder="Type a message..." maxlength="16"
+          <input type="text" class="message-input" id="message-input" placeholder="Sua mensagem..." maxlength="16"
             autocomplete="off">
-          <button type="submit" class="send-btn" id="send-btn">Send</button>
+          <button type="submit" class="send-btn" id="send-btn">Enviar</button>
         </form>
       </div>
+    </div>
 
-      <!-- Pomodoro Timer Card -->
-      <div class="card animate-in" id="card-timer">
-        <span class="card__label">Pomodoro Timer</span>
+    <!-- ── VIEW: POMODORO ──────────────────────────────────── -->
+    <div class="view" id="view-timer">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Pomodoro</h2>
+      </div>
+      <div class="card animate-in">
         <div class="timer">
           <div class="timer__display">
             <svg class="timer__ring" viewBox="0 0 200 200">
@@ -124,22 +155,58 @@
             <span class="timer__state" id="timer-state">Ready</span>
           </div>
           <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-start">▶ Start Focus</button>
-            <button class="timer-btn" id="btn-pause" disabled>⏸ Pause</button>
-            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled>⏹ Stop</button>
-            <button class="timer-btn" id="btn-break" disabled>☕ Break</button>
+            <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16"
+                height="16"></i> Start Focus</button>
+            <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i>
+              Pause</button>
+            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16"
+                height="16"></i> Stop</button>
+            <button class="timer-btn" id="btn-break" disabled><i data-lucide="coffee" width="16" height="16"></i>
+              Break</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Serial Monitor Card -->
-      <div class="card card--full animate-in" id="card-serial">
-        <span class="card__label">Serial Monitor</span>
-        <div class="serial-log" id="serial-log">
+    <!-- ── VIEW: ALARM ─────────────────────────────────────── -->
+    <div class="view" id="view-alarm">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Alarme</h2>
+      </div>
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
+          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20"
+            style="vertical-align: middle; margin-left: 4px;"></i>
+        </p>
+      </div>
+    </div>
+
+    <!-- ── VIEW: SERIAL MONITOR ────────────────────────────── -->
+    <div class="view" id="view-serial">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Monitor Serial</h2>
+      </div>
+      <div class="card card--full animate-in" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="serial-log" id="serial-log" style="flex: 1;">
           <span class="serial-log__entry serial-log__entry--system">• Waiting for connection...</span>
         </div>
       </div>
+    </div>
 
+    <!-- ── VIEW: SETTINGS ──────────────────────────────────── -->
+    <div class="view" id="view-settings">
+      <div class="view-header">
+        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+        <h2>Configurações</h2>
+      </div>
+      <div class="card animate-in">
+        <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
+          Configurações do dispositivo em breve. <i data-lucide="settings" width="20" height="20"
+            style="vertical-align: middle; margin-left: 4px;"></i>
+        </p>
+      </div>
     </div>
 
     <!-- ── Footer ──────────────────────────────────────── -->
@@ -154,6 +221,9 @@
 
   <!-- App Script -->
   <script src="app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
 </body>
 
 </html>
