@@ -59,8 +59,8 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
       <!-- Minimalist LCD Preview -->
       <div class="lcd-minimalist animate-in" id="lcd-minimalist">
-        <div class="lcd__row" id="lcd-row-0">     O    O     </div>
-        <div class="lcd__row" id="lcd-row-1">                </div>
+        <div class="lcd__row" id="lcd-row-0"> O O </div>
+        <div class="lcd__row" id="lcd-row-1"> </div>
       </div>
 
       <!-- Home Grid Shortcuts -->
@@ -139,7 +139,8 @@ const char WEB_HTML[] PROGMEM = R"=====(
           Digite uma mensagem curta para ser exibida no visor do Trenzin.
         </p>
         <form class="message-form" id="message-form" onsubmit="return false;">
-          <input type="text" class="message-input" id="message-input" placeholder="Sua mensagem..." maxlength="16" autocomplete="off">
+          <input type="text" class="message-input" id="message-input" placeholder="Sua mensagem..." maxlength="16"
+            autocomplete="off">
           <button type="submit" class="send-btn" id="send-btn">Enviar</button>
         </form>
       </div>
@@ -147,9 +148,15 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
     <!-- ── VIEW: POMODORO ──────────────────────────────────── -->
     <div class="view" id="view-timer">
-      <div class="view-header">
-        <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
-        <h2>Pomodoro</h2>
+      <div class="view-header" style="flex-direction: row; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
+          <h2>Pomodoro</h2>
+        </div>
+        <button class="icon-btn" id="btn-pomodoro-settings"
+          style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 8px;">
+          <i data-lucide="settings" width="24" height="24"></i>
+        </button>
       </div>
       <div class="card animate-in">
         <div class="timer">
@@ -163,10 +170,14 @@ const char WEB_HTML[] PROGMEM = R"=====(
             <span class="timer__state" id="timer-state">Ready</span>
           </div>
           <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16" height="16"></i> Start Focus</button>
-            <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i> Pause</button>
-            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16" height="16"></i> Stop</button>
-            <button class="timer-btn" id="btn-break" disabled><i data-lucide="coffee" width="16" height="16"></i> Break</button>
+            <button class="timer-btn timer-btn--primary" id="btn-start"><i data-lucide="play" width="16"
+                height="16"></i> Start Focus</button>
+            <button class="timer-btn" id="btn-pause" disabled><i data-lucide="pause" width="16" height="16"></i>
+              Pause</button>
+            <button class="timer-btn timer-btn--danger" id="btn-stop" disabled><i data-lucide="square" width="16"
+                height="16"></i> Stop</button>
+            <button class="timer-btn" id="btn-break" disabled><i data-lucide="coffee" width="16" height="16"></i>
+              Break</button>
           </div>
         </div>
       </div>
@@ -180,7 +191,8 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </div>
       <div class="card animate-in">
         <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20" style="vertical-align: middle; margin-left: 4px;"></i>
+          Funcionalidade de Alarme em breve. <i data-lucide="alarm-clock" width="20" height="20"
+            style="vertical-align: middle; margin-left: 4px;"></i>
         </p>
       </div>
     </div>
@@ -206,7 +218,8 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </div>
       <div class="card animate-in">
         <p style="font-size: 14px; color: var(--text-muted); text-align: center; padding: 40px 0;">
-          Configurações do dispositivo em breve. <i data-lucide="settings" width="20" height="20" style="vertical-align: middle; margin-left: 4px;"></i>
+          Configurações do dispositivo em breve. <i data-lucide="settings" width="20" height="20"
+            style="vertical-align: middle; margin-left: 4px;"></i>
         </p>
       </div>
     </div>
@@ -219,6 +232,49 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </p>
     </footer>
 
+  </div>
+
+  <!-- ── POMODORO SETTINGS MODAL ───────────────────────── -->
+  <div class="modal-overlay" id="pomodoro-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div style="width: 24px;"></div> <!-- Spacer for centering -->
+        <h3 class="modal-title">CONFIGURAÇÃO</h3>
+        <button class="modal-close" id="btn-close-modal">
+          <i data-lucide="x" width="20" height="20"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-section-title">
+          <i data-lucide="clock" width="16" height="16"></i>
+          <span>TEMPORIZADOR</span>
+        </div>
+
+        <h4 class="modal-label">Tempo (minutos)</h4>
+        <div class="modal-grid-3">
+          <div class="input-group">
+            <label>Pomodoro</label>
+            <input type="number" id="input-focus-time" value="25" min="1" max="90">
+          </div>
+          <div class="input-group">
+            <label>Pausa Curta</label>
+            <input type="number" id="input-short-break" value="5" min="1" max="30">
+          </div>
+          <div class="input-group">
+            <label>Pausa Longa</label>
+            <input type="number" id="input-long-break" value="15" min="1" max="60">
+          </div>
+        </div>
+
+        <div class="modal-row" style="margin-top: 24px; margin-bottom: 24px;">
+          <h4 class="modal-label" style="margin: 0;">Intervalo longo</h4>
+          <input type="number" class="input-small" id="input-long-interval" value="4" min="1" max="10">
+        </div>
+
+        <button class="save-btn" id="btn-save-pomodoro">Salvar</button>
+      </div>
+    </div>
   </div>
 
   <!-- App Script -->
@@ -244,7 +300,7 @@ const char WEB_CSS[] PROGMEM = R"=====(
   --bg-surface: #464a59;
   --bg-surface-hover: #505566;
   --bg-surface-active: #5c6275;
-  
+
   --border-subtle: transparent;
   --border-default: transparent;
   --border-strong: rgba(255, 255, 255, 0.1);
@@ -303,7 +359,8 @@ body {
 .app {
   position: relative;
   z-index: 1;
-  max-width: 600px; /* Mais estreito para focar na proporção vertical/mobile */
+  max-width: 600px;
+  /* Mais estreito para focar na proporção vertical/mobile */
   margin: 0 auto;
   padding: 40px 24px 80px;
 }
@@ -320,8 +377,15 @@ body {
 }
 
 @keyframes fadeInView {
-  from { opacity: 0; transform: scale(0.98) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .view-header {
@@ -487,7 +551,8 @@ body {
 }
 
 .shortcut-btn {
-  aspect-ratio: 1; /* Makes them perfectly square */
+  aspect-ratio: 1;
+  /* Makes them perfectly square */
   background: var(--bg-surface);
   border: none;
   border-radius: var(--radius-md);
@@ -525,7 +590,8 @@ body {
 
 /* ── Generic Card (Para as outras views) ────────────────── */
 .card {
-  background: transparent; /* No Braun style, the view itself is clean */
+  background: transparent;
+  /* No Braun style, the view itself is clean */
 }
 
 .card--full {
@@ -756,7 +822,8 @@ body {
   background: var(--bg-surface);
   border-radius: var(--radius-md);
   padding: 20px;
-  height: 400px; /* Fixed height for log */
+  height: 400px;
+  /* Fixed height for log */
   overflow-y: auto;
   overflow-x: hidden;
   word-break: break-word;
@@ -819,24 +886,24 @@ body {
   .app {
     padding: 30px 20px 60px;
   }
-  
+
   .home-shortcuts {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .expressions-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .timer__display {
     width: 220px;
     height: 220px;
   }
-  
+
   .timer__time {
     font-size: 48px;
   }
-  
+
   .lcd__row {
     font-size: 18px;
     letter-spacing: 8px;
@@ -855,7 +922,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(54, 57, 69, 0.85); /* Coincide com bg-primary */
+  background: rgba(54, 57, 69, 0.85);
+  /* Coincide com bg-primary */
   backdrop-filter: blur(4px);
   border-radius: var(--radius-md);
   font-size: 14px;
@@ -869,6 +937,162 @@ body {
 .disabled-overlay--active::after {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── Pomodoro Modal ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-default);
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  transform: translateY(20px);
+  transition: transform var(--transition-default);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-overlay.active .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 24px;
+}
+
+.modal-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.modal-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.input-group input,
+.input-small {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.input-small {
+  width: 70px;
+  text-align: center;
+}
+
+.input-group input:focus,
+.input-small:focus {
+  background: var(--bg-surface-active);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.save-btn {
+  width: 100%;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-btn:hover {
+  background: var(--bg-surface-active);
+  transform: translateY(-2px);
 })=====";
 
 const char WEB_JS[] PROGMEM = R"=====(
@@ -943,17 +1167,34 @@ class WebSocketConnection {
 // ── Pomodoro Timer (local mirror) ──────────────────────────
 class PomodoroTimer {
   constructor() {
-    this.state = 'off'; // off, focus, break, paused, done
+    this.state = 'off'; // off, focus, break, short-break, long-break, paused, done
+    this.lastState = 'off';
     this.totalSeconds = 0;
     this.remainingSeconds = 0;
     this.interval = null;
     this.onTick = null;
     this.onDone = null;
+
+    this.config = {
+      focus: 25,
+      shortBreak: 5,
+      longBreak: 15,
+      longBreakInterval: 4
+    };
+    this.completedPomodoros = 0;
   }
 
   start(type = 'focus') {
     this.stop();
-    this.totalSeconds = type === 'focus' ? 25 * 60 : 5 * 60;
+
+    if (type === 'focus') {
+      this.totalSeconds = this.config.focus * 60;
+    } else if (type === 'long-break') {
+      this.totalSeconds = this.config.longBreak * 60;
+    } else { // 'break' or 'short-break'
+      this.totalSeconds = this.config.shortBreak * 60;
+    }
+
     this.remainingSeconds = this.totalSeconds;
     this.state = type;
     this.interval = setInterval(() => this._tick(), 1000);
@@ -961,7 +1202,8 @@ class PomodoroTimer {
   }
 
   pause() {
-    if (this.state === 'focus' || this.state === 'break') {
+    if (this.state !== 'off' && this.state !== 'paused' && this.state !== 'done') {
+      this.lastState = this.state;
       clearInterval(this.interval);
       this.interval = null;
       this.state = 'paused';
@@ -971,7 +1213,7 @@ class PomodoroTimer {
 
   resume() {
     if (this.state === 'paused') {
-      this.state = this.remainingSeconds > 5 * 60 ? 'focus' : 'break';
+      this.state = this.lastState !== 'off' ? this.lastState : 'focus';
       this.interval = setInterval(() => this._tick(), 1000);
       if (this.onTick) this.onTick();
     }
@@ -1013,6 +1255,9 @@ class PomodoroTimer {
   }
 
   get timeString() {
+    if (this.state === 'off') {
+      return `${String(this.config.focus).padStart(2, '0')}:00`;
+    }
     return `${String(this.minutes).padStart(2, '0')}:${String(this.seconds).padStart(2, '0')}`;
   }
 }
@@ -1076,21 +1321,21 @@ function setupEventListeners() {
 
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
-    timer.start('focus');
-    trenzinConn.send('TMR:START');
-    addLog('TMR:START', 'tx');
-  });
-
-  $('#btn-pause').addEventListener('click', () => {
     if (timer.state === 'paused') {
       timer.resume();
       trenzinConn.send('TMR:RESUME');
       addLog('TMR:RESUME', 'tx');
     } else {
-      timer.pause();
-      trenzinConn.send('TMR:PAUSE');
-      addLog('TMR:PAUSE', 'tx');
+      timer.start('focus');
+      trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+      addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
     }
+  });
+
+  $('#btn-pause').addEventListener('click', () => {
+    timer.pause();
+    trenzinConn.send('TMR:PAUSE');
+    addLog('TMR:PAUSE', 'tx');
   });
 
   $('#btn-stop').addEventListener('click', () => {
@@ -1100,9 +1345,43 @@ function setupEventListeners() {
   });
 
   $('#btn-break').addEventListener('click', () => {
-    timer.start('break');
-    trenzinConn.send('TMR:BREAK');
-    addLog('TMR:BREAK', 'tx');
+    timer.completedPomodoros++;
+    if (timer.completedPomodoros % timer.config.longBreakInterval === 0) {
+      timer.start('long-break');
+      trenzinConn.send(`TMR:LBREAK:${timer.config.longBreak}`);
+      addLog(`TMR:LBREAK:${timer.config.longBreak}`, 'tx');
+    } else {
+      timer.start('short-break');
+      trenzinConn.send(`TMR:BREAK:${timer.config.shortBreak}`);
+      addLog(`TMR:BREAK:${timer.config.shortBreak}`, 'tx');
+    }
+  });
+
+  // Pomodoro Settings Modal
+  $('#btn-pomodoro-settings').addEventListener('click', () => {
+    $('#input-focus-time').value = timer.config.focus;
+    $('#input-short-break').value = timer.config.shortBreak;
+    $('#input-long-break').value = timer.config.longBreak;
+    $('#input-long-interval').value = timer.config.longBreakInterval;
+    $('#pomodoro-modal').classList.add('active');
+  });
+
+  $('#btn-close-modal').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+  });
+
+  $('#btn-save-pomodoro').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+    
+    // Update config
+    timer.config.focus = parseInt($('#input-focus-time').value) || 25;
+    timer.config.shortBreak = parseInt($('#input-short-break').value) || 5;
+    timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
+    timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
+    
+    if (timer.state === 'off') {
+      updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
+    }
   });
 
   // Message form

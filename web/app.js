@@ -69,17 +69,34 @@ class WebSocketConnection {
 // ── Pomodoro Timer (local mirror) ──────────────────────────
 class PomodoroTimer {
   constructor() {
-    this.state = 'off'; // off, focus, break, paused, done
+    this.state = 'off'; // off, focus, break, short-break, long-break, paused, done
+    this.lastState = 'off';
     this.totalSeconds = 0;
     this.remainingSeconds = 0;
     this.interval = null;
     this.onTick = null;
     this.onDone = null;
+
+    this.config = {
+      focus: 25,
+      shortBreak: 5,
+      longBreak: 15,
+      longBreakInterval: 4
+    };
+    this.completedPomodoros = 0;
   }
 
   start(type = 'focus') {
     this.stop();
-    this.totalSeconds = type === 'focus' ? 25 * 60 : 5 * 60;
+
+    if (type === 'focus') {
+      this.totalSeconds = this.config.focus * 60;
+    } else if (type === 'long-break') {
+      this.totalSeconds = this.config.longBreak * 60;
+    } else { // 'break' or 'short-break'
+      this.totalSeconds = this.config.shortBreak * 60;
+    }
+
     this.remainingSeconds = this.totalSeconds;
     this.state = type;
     this.interval = setInterval(() => this._tick(), 1000);
@@ -87,7 +104,8 @@ class PomodoroTimer {
   }
 
   pause() {
-    if (this.state === 'focus' || this.state === 'break') {
+    if (this.state !== 'off' && this.state !== 'paused' && this.state !== 'done') {
+      this.lastState = this.state;
       clearInterval(this.interval);
       this.interval = null;
       this.state = 'paused';
@@ -97,7 +115,7 @@ class PomodoroTimer {
 
   resume() {
     if (this.state === 'paused') {
-      this.state = this.remainingSeconds > 5 * 60 ? 'focus' : 'break';
+      this.state = this.lastState !== 'off' ? this.lastState : 'focus';
       this.interval = setInterval(() => this._tick(), 1000);
       if (this.onTick) this.onTick();
     }
@@ -139,6 +157,9 @@ class PomodoroTimer {
   }
 
   get timeString() {
+    if (this.state === 'off') {
+      return `${String(this.config.focus).padStart(2, '0')}:00`;
+    }
     return `${String(this.minutes).padStart(2, '0')}:${String(this.seconds).padStart(2, '0')}`;
   }
 }
@@ -202,21 +223,21 @@ function setupEventListeners() {
 
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
-    timer.start('focus');
-    trenzinConn.send('TMR:START');
-    addLog('TMR:START', 'tx');
-  });
-
-  $('#btn-pause').addEventListener('click', () => {
     if (timer.state === 'paused') {
       timer.resume();
       trenzinConn.send('TMR:RESUME');
       addLog('TMR:RESUME', 'tx');
     } else {
-      timer.pause();
-      trenzinConn.send('TMR:PAUSE');
-      addLog('TMR:PAUSE', 'tx');
+      timer.start('focus');
+      trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+      addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
     }
+  });
+
+  $('#btn-pause').addEventListener('click', () => {
+    timer.pause();
+    trenzinConn.send('TMR:PAUSE');
+    addLog('TMR:PAUSE', 'tx');
   });
 
   $('#btn-stop').addEventListener('click', () => {
@@ -226,9 +247,43 @@ function setupEventListeners() {
   });
 
   $('#btn-break').addEventListener('click', () => {
-    timer.start('break');
-    trenzinConn.send('TMR:BREAK');
-    addLog('TMR:BREAK', 'tx');
+    timer.completedPomodoros++;
+    if (timer.completedPomodoros % timer.config.longBreakInterval === 0) {
+      timer.start('long-break');
+      trenzinConn.send(`TMR:LBREAK:${timer.config.longBreak}`);
+      addLog(`TMR:LBREAK:${timer.config.longBreak}`, 'tx');
+    } else {
+      timer.start('short-break');
+      trenzinConn.send(`TMR:BREAK:${timer.config.shortBreak}`);
+      addLog(`TMR:BREAK:${timer.config.shortBreak}`, 'tx');
+    }
+  });
+
+  // Pomodoro Settings Modal
+  $('#btn-pomodoro-settings').addEventListener('click', () => {
+    $('#input-focus-time').value = timer.config.focus;
+    $('#input-short-break').value = timer.config.shortBreak;
+    $('#input-long-break').value = timer.config.longBreak;
+    $('#input-long-interval').value = timer.config.longBreakInterval;
+    $('#pomodoro-modal').classList.add('active');
+  });
+
+  $('#btn-close-modal').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+  });
+
+  $('#btn-save-pomodoro').addEventListener('click', () => {
+    $('#pomodoro-modal').classList.remove('active');
+
+    // Update config
+    timer.config.focus = parseInt($('#input-focus-time').value) || 25;
+    timer.config.shortBreak = parseInt($('#input-short-break').value) || 5;
+    timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
+    timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
+
+    if (timer.state === 'off') {
+      updateTimerDisplay(); // Refresh the default '25:00' to whatever is set
+    }
   });
 
   // Message form
