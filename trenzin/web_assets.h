@@ -15,7 +15,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <title>Trenzin - Seu companheiro de mesa</title>
   <meta name="description"
-    content="Control your Taby desk robot clone. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
+    content="Control your Trenzin desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -169,7 +169,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
 const char WEB_CSS[] PROGMEM = R"=====(
 /* ============================================================
-   TABY Clone — Design System
+   TRENZIN — Design System
    Premium dark mode with glassmorphism
    ============================================================ */
 
@@ -958,7 +958,7 @@ body::before {
 
 const char WEB_JS[] PROGMEM = R"=====(
 // ============================================================
-// TABY Clone — Web Serial Dashboard
+// TRENZIN — Web Serial Dashboard
 // Communicates with Arduino Nano via Web Serial API
 // ============================================================
 
@@ -1204,7 +1204,7 @@ function setupEventListeners() {
     updateLCDPreview();
     // Optional: browser notification
     if (Notification.permission === 'granted') {
-      new Notification('Taby', {
+      new Notification('Trenzin', {
         body: timer.totalSeconds > 5 * 60 ? '🎉 Focus session done!' : '☕ Break is over!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });

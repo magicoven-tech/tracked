@@ -33,7 +33,7 @@ def build():
     
     out += "#endif\n"
     
-    out_path = os.path.join(root_dir, 'taby', 'web_assets.h')
+    out_path = os.path.join(root_dir, 'trenzin', 'web_assets.h')
     
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write(out)

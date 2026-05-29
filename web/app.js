@@ -1,5 +1,5 @@
 // ============================================================
-// TABY Clone — Web Serial Dashboard
+// TRENZIN — Web Serial Dashboard
 // Communicates with Arduino Nano via Web Serial API
 // ============================================================
 
@@ -245,7 +245,7 @@ function setupEventListeners() {
     updateLCDPreview();
     // Optional: browser notification
     if (Notification.permission === 'granted') {
-      new Notification('Taby', {
+      new Notification('Trenzin', {
         body: timer.totalSeconds > 5 * 60 ? '🎉 Focus session done!' : '☕ Break is over!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
