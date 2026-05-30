@@ -217,6 +217,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     // Send initial state to the new client
     sendToClients("ACK:BOOT");
     sendToClients("STATE:IDLE");
+    sendTimerState();
   } break;
   case WStype_TEXT: {
     String cmd = "";
