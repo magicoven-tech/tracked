@@ -180,21 +180,14 @@
           <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
           <h2>Alarme</h2>
         </div>
-        <button class="icon-btn" id="btn-alarm-settings">
-          <i data-lucide="settings" width="24" height="24"></i>
+        <button class="icon-btn" id="btn-alarm-add">
+          <i data-lucide="plus" width="24" height="24"></i>
         </button>
       </div>
-      <div class="card animate-in">
-        <div class="timer">
-          <div class="timer__display">
-            <!-- Sem SVG Ring para o alarme -->
-            <span class="timer__time" id="alarm-display-time">07:00</span>
-            <span class="timer__state" id="alarm-state-label">Desativado</span>
-          </div>
-          <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-alarm-toggle"><i data-lucide="bell" width="16"
-                height="16"></i> Ativar alarme</button>
-          </div>
+
+      <div class="alarms-wrapper animate-in">
+        <div class="alarms-list" id="alarms-list">
+          <!-- Os cards de alarme serão injetados via JS -->
         </div>
       </div>
     </div>
@@ -295,6 +288,11 @@
           <span>ALARME</span>
         </div>
 
+        <div class="input-group" style="margin-bottom: 20px;">
+          <label>Nome do Alarme</label>
+          <input type="text" id="input-alarm-label" placeholder="Ex: Acordar" maxlength="15" autocomplete="off">
+        </div>
+
         <h4 class="modal-label">Hora do alarme</h4>
         <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
           <div class="input-group" style="flex: 1;">
@@ -308,7 +306,12 @@
           </div>
         </div>
 
-        <button class="save-btn" id="btn-save-alarm">Salvar</button>
+        <div style="display: flex; gap: 12px; margin-top: 12px;">
+          <button class="save-btn" id="btn-delete-alarm" style="background: var(--danger); width: auto; padding: 0 20px; display: none;">
+            <i data-lucide="trash-2" width="20" height="20"></i>
+          </button>
+          <button class="save-btn" id="btn-save-alarm" style="flex: 1;">Salvar</button>
+        </div>
       </div>
     </div>
   </div>

@@ -189,21 +189,14 @@ const char WEB_HTML[] PROGMEM = R"=====(
           <button class="back-btn" onclick="navigateTo('home')">← Voltar</button>
           <h2>Alarme</h2>
         </div>
-        <button class="icon-btn" id="btn-alarm-settings">
-          <i data-lucide="settings" width="24" height="24"></i>
+        <button class="icon-btn" id="btn-alarm-add">
+          <i data-lucide="plus" width="24" height="24"></i>
         </button>
       </div>
-      <div class="card animate-in">
-        <div class="timer">
-          <div class="timer__display">
-            <!-- Sem SVG Ring para o alarme -->
-            <span class="timer__time" id="alarm-display-time">07:00</span>
-            <span class="timer__state" id="alarm-state-label">Desativado</span>
-          </div>
-          <div class="timer__controls">
-            <button class="timer-btn timer-btn--primary" id="btn-alarm-toggle"><i data-lucide="bell" width="16"
-                height="16"></i> Ativar alarme</button>
-          </div>
+
+      <div class="alarms-wrapper animate-in">
+        <div class="alarms-list" id="alarms-list">
+          <!-- Os cards de alarme serão injetados via JS -->
         </div>
       </div>
     </div>
@@ -304,6 +297,11 @@ const char WEB_HTML[] PROGMEM = R"=====(
           <span>ALARME</span>
         </div>
 
+        <div class="input-group" style="margin-bottom: 20px;">
+          <label>Nome do Alarme</label>
+          <input type="text" id="input-alarm-label" placeholder="Ex: Acordar" maxlength="15" autocomplete="off">
+        </div>
+
         <h4 class="modal-label">Hora do alarme</h4>
         <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
           <div class="input-group" style="flex: 1;">
@@ -317,7 +315,12 @@ const char WEB_HTML[] PROGMEM = R"=====(
           </div>
         </div>
 
-        <button class="save-btn" id="btn-save-alarm">Salvar</button>
+        <div style="display: flex; gap: 12px; margin-top: 12px;">
+          <button class="save-btn" id="btn-delete-alarm" style="background: var(--danger); width: auto; padding: 0 20px; display: none;">
+            <i data-lucide="trash-2" width="20" height="20"></i>
+          </button>
+          <button class="save-btn" id="btn-save-alarm" style="flex: 1;">Salvar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -396,6 +399,7 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.5;
   overflow-x: hidden;
 }
@@ -405,9 +409,12 @@ body {
   position: relative;
   z-index: 1;
   max-width: 600px;
-  /* Mais estreito para focar na proporção vertical/mobile */
   margin: 0 auto;
-  padding: 40px 24px 80px;
+  padding: 40px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ── SPA Views ──────────────────────────────────────────── */
@@ -929,6 +936,7 @@ body {
   padding: 40px 0 0;
   font-size: 13px;
   color: var(--text-ghost);
+  margin-top: auto;
 }
 
 .footer a {
@@ -939,6 +947,84 @@ body {
 
 .footer a:hover {
   color: var(--text-primary);
+}
+
+/* ── Alarms List ─────────────────────────────────────────── */
+.alarms-wrapper {
+  margin: 0 -24px;
+  padding: 0 24px;
+}
+
+.alarms-list {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 24px;
+  scroll-snap-type: x mandatory;
+}
+
+.alarms-list::-webkit-scrollbar {
+  display: none;
+}
+
+.alarm-card {
+  flex: 0 0 150px;
+  height: 170px;
+  scroll-snap-align: start;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.alarm-card--on {
+  background: var(--surface-light);
+  border-color: var(--primary);
+}
+
+.alarm-toggle-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface-light);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.alarm-card--on .alarm-toggle-btn {
+  background: #ffffff;
+  color: #363945;
+  box-shadow: none;
+}
+
+.alarm-card-bottom {
+  display: flex;
+  flex-direction: column;
+}
+
+.alarm-card-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.alarm-card-time {
+  font-size: 38px;
+  font-weight: 500;
+  letter-spacing: -2px;
+  color: var(--text-main);
 }
 
 /* ── Responsive ─────────────────────────────────────────── */
@@ -1364,6 +1450,7 @@ function updateDateDisplay() {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  initAlarm();
   updateLCDFace(currentExpression);
   updateLCDPreview();
   updateDateDisplay();
@@ -1460,10 +1547,8 @@ function setupEventListeners() {
   });
 
   // ── Alarm Logic ───────────────────────────────────────────
-  $('#btn-alarm-settings').addEventListener('click', () => {
-    $('#alarm-modal').classList.add('active');
-    $('#input-alarm-h').value = alarmConfig.h;
-    $('#input-alarm-m').value = alarmConfig.m;
+  $('#btn-alarm-add').addEventListener('click', () => {
+    openAlarmModal(null); // null significa "novo alarme"
   });
 
   $('#btn-close-alarm-modal').addEventListener('click', () => {
@@ -1473,22 +1558,51 @@ function setupEventListeners() {
   $('#btn-save-alarm').addEventListener('click', () => {
     let h = parseInt($('#input-alarm-h').value) || 0;
     let m = parseInt($('#input-alarm-m').value) || 0;
+    let label = $('#input-alarm-label').value.trim();
     if (h < 0) h = 0; if (h > 23) h = 23;
     if (m < 0) m = 0; if (m > 59) m = 59;
 
-    alarmConfig.h = h;
-    alarmConfig.m = m;
-    saveAlarm();
-    updateAlarmUI();
+    if (editingAlarmId !== null) {
+      // Edição
+      const idx = alarms.findIndex(a => a.id === editingAlarmId);
+      if (idx !== -1) {
+        alarms[idx].h = h;
+        alarms[idx].m = m;
+        alarms[idx].label = label || `Alarme ${alarms[idx].id + 1}`;
+        if (trenzinConn.connected) {
+          trenzinConn.send(`ALM:SET:${editingAlarmId}:${h}:${m}`);
+        }
+      }
+    } else {
+      // Novo alarme
+      if (alarms.length >= 10) {
+        alert("Limite máximo de alarmes atingido.");
+        return;
+      }
+      const newId = alarms.length > 0 ? Math.max(...alarms.map(a => a.id)) + 1 : 0;
+      const newAlarm = { id: newId, h, m, enabled: true, label: label || `Alarme ${newId + 1}` };
+      alarms.push(newAlarm);
+      if (trenzinConn.connected) {
+        trenzinConn.send(`ALM:SET:${newAlarm.id}:${newAlarm.h}:${newAlarm.m}`);
+        trenzinConn.send(`ALM:ON:${newAlarm.id}`);
+      }
+    }
+
+    saveAlarms();
+    renderAlarms();
     $('#alarm-modal').classList.remove('active');
-    addLog(`ALM:SET:${h}:${m}`, 'tx');
   });
 
-  $('#btn-alarm-toggle').addEventListener('click', () => {
-    alarmConfig.enabled = !alarmConfig.enabled;
-    saveAlarm();
-    updateAlarmUI();
-    addLog(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF', 'tx');
+  $('#btn-delete-alarm').addEventListener('click', () => {
+    if (editingAlarmId !== null) {
+      alarms = alarms.filter(a => a.id !== editingAlarmId);
+      if (trenzinConn.connected) {
+        trenzinConn.send(`ALM:DEL:${editingAlarmId}`);
+      }
+      saveAlarms();
+      renderAlarms();
+    }
+    $('#alarm-modal').classList.remove('active');
   });
 
   // Message form
@@ -1542,22 +1656,21 @@ async function handleConnect() {
   }
 
   let ipToConnect;
-  if (window.location.hostname && window.location.hostname !== 'localhost') {
+  if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '') {
     ipToConnect = window.location.hostname;
   } else {
-    addLog('Não foi possível determinar o endereço IP', 'error');
-    return;
+    // Para desenvolvimento local (mock / debugging) sem o ESP32 real
+    ipToConnect = '192.168.4.1'; // IP fallback padrão do Access Point do ESP32
   }
 
   trenzinConn.onConnect = () => {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-    // Send timer config (in case ESP restarted)
-    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
 
-    // Send alarm config
-    trenzinConn.send(`ALM:SET:${alarmConfig.h}:${alarmConfig.m}`);
-    trenzinConn.send(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF');
+    alarms.forEach(a => {
+      trenzinConn.send(`ALM:SET:${a.id}:${a.h}:${a.m}`);
+      trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
+    });
   };
 
   trenzinConn.onReceive = (data) => {
@@ -1771,45 +1884,90 @@ function addLog(message, type = 'system') {
 }
 
 // ── Alarm State & UI ──────────────────────────────────────
-let alarmConfig = { h: 7, m: 0, enabled: false };
+let alarms = [];
+let editingAlarmId = null;
 
 function initAlarm() {
-  const saved = localStorage.getItem('trenzin_alarm');
+  const saved = localStorage.getItem('trenzin_alarms');
   if (saved) {
-    alarmConfig = JSON.parse(saved);
-  }
-  updateAlarmUI();
-}
-
-function saveAlarm() {
-  localStorage.setItem('trenzin_alarm', JSON.stringify(alarmConfig));
-  if (trenzinConn.connected) {
-    trenzinConn.send(`ALM:SET:${alarmConfig.h}:${alarmConfig.m}`);
-    trenzinConn.send(alarmConfig.enabled ? 'ALM:ON' : 'ALM:OFF');
-  }
-}
-
-function updateAlarmUI() {
-  const hh = alarmConfig.h.toString().padStart(2, '0');
-  const mm = alarmConfig.m.toString().padStart(2, '0');
-  $('#alarm-display-time').textContent = `${hh}:${mm}`;
-
-  if (alarmConfig.enabled) {
-    $('#alarm-state-label').textContent = 'Ativado';
-    $('#alarm-state-label').style.color = 'var(--success)';
-    $('#btn-alarm-toggle').innerHTML = '<i data-lucide="bell-off" width="16" height="16"></i> Desativar alarme';
-    $('#btn-alarm-toggle').classList.replace('timer-btn--primary', 'timer-btn--danger');
-    if (!$('#btn-alarm-toggle').classList.contains('timer-btn--danger')) {
-      $('#btn-alarm-toggle').classList.add('timer-btn--danger');
-    }
+    alarms = JSON.parse(saved);
   } else {
-    $('#alarm-state-label').textContent = 'Desativado';
-    $('#alarm-state-label').style.color = 'var(--text-muted)';
-    $('#btn-alarm-toggle').innerHTML = '<i data-lucide="bell" width="16" height="16"></i> Ativar alarme';
-    $('#btn-alarm-toggle').classList.replace('timer-btn--danger', 'timer-btn--primary');
+    alarms = [{ id: 0, h: 7, m: 0, enabled: false, label: "Alarme 1" }];
+    saveAlarms();
+  }
+  renderAlarms();
+}
+
+function saveAlarms() {
+  localStorage.setItem('trenzin_alarms', JSON.stringify(alarms));
+}
+
+function openAlarmModal(id) {
+  editingAlarmId = id;
+  const modal = $('#alarm-modal');
+  const title = document.getElementById('alarm-modal-title-text') || modal.querySelector('.modal-section-title span');
+
+  if (title) title.textContent = id !== null ? 'EDITAR ALARME' : 'NOVO ALARME';
+
+  if (id !== null) {
+    const a = alarms.find(x => x.id === id);
+    $('#input-alarm-h').value = a ? a.h : 0;
+    $('#input-alarm-m').value = a ? a.m : 0;
+    $('#input-alarm-label').value = a ? (a.label || '') : '';
+    $('#btn-delete-alarm').style.display = 'block';
+  } else {
+    $('#input-alarm-h').value = 7;
+    $('#input-alarm-m').value = 0;
+    $('#input-alarm-label').value = '';
+    $('#btn-delete-alarm').style.display = 'none';
   }
 
-  if (window.lucide) window.lucide.createIcons();
+  modal.classList.add('active');
+}
+
+function renderAlarms() {
+  const list = $('#alarms-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  alarms.forEach(a => {
+    const hh = a.h.toString().padStart(2, '0');
+    const mm = a.m.toString().padStart(2, '0');
+    const stateClass = a.enabled ? 'alarm-card--on' : 'alarm-card--off';
+
+    const card = document.createElement('div');
+    card.className = `alarm-card ${stateClass}`;
+    card.innerHTML = `
+      <div class="alarm-card-header" style="justify-content: flex-start;">
+        <button class="alarm-toggle-btn" data-id="${a.id}">
+          ${a.enabled ? 'ON' : 'OFF'}
+        </button>
+      </div>
+      <div class="alarm-card-bottom" style="margin-top:auto">
+        <div class="alarm-card-label">${a.label}</div>
+        <div class="alarm-card-time">${hh}:${mm}</div>
+      </div>
+    `;
+
+    // Toggle
+    const toggle = card.querySelector('.alarm-toggle-btn');
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      a.enabled = !a.enabled;
+      saveAlarms();
+      renderAlarms();
+      if (trenzinConn.connected) {
+        trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
+      }
+    });
+
+    // Edit
+    card.addEventListener('click', () => {
+      openAlarmModal(a.id);
+    });
+
+    list.appendChild(card);
+  });
 }
 )=====";
 
