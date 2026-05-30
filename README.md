@@ -1,92 +1,102 @@
-# 🤖 Trenzin — Seu companheiro de mesa inteligente
+# Trenzin OS
 
-> Criado com muito amor e café pela [MagicOven](https://magicoven.tech). ☕
-
-O **Trenzin** é um assistente de mesa com uma interface de expressões fofa, integrado a ferramentas de produtividade. Ele é equipado com um display LCD 1602A, operado por um microcontrolador da família ESP (ESP32/ESP8266) com conectividade Wi-Fi e um Dashboard Web direto no seu navegador.
+O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com um display LCD, capaz de expressar emoções, atuar como um temporizador Pomodoro e gerenciar múltiplos alarmes. Desenvolvido para rodar em um **ESP32** com uma interface Web moderna, responsiva e sincronizada em tempo real via WebSockets.
 
 ---
 
-## ✨ Features
+## 🛠 Funcionalidades do sistema
 
-- **Expressões interativas:** O rosto do Trenzin muda para refletir estados como feliz, triste, foco, dormindo ou neutro (com direito a piscadas automáticas!).
-- **Temporizador oomodoro (focus timer):** Chega de se distrair. Inicie o cronômetro pelo celular e deixe o Trenzin guiar suas sessões de foco (25 min) e pausas (5 min) direto no visor LCD.
-- **Mensagens customizadas:** Mande um texto rápido para o visor do Trenzin através do painel de controle.
-- **Dashboard Web:** Uma interface linda, responsiva que se comporta como um aplicativo nativo no seu celular.
-- **Setup automático de Wi-Fi:** Não precisa mexer no código para trocar a senha do Wi-Fi! O Trenzin cria um portal inteligente para você escolher sua rede.
-
----
-
-## 🛠️ Hardware necessário
-
-- 1x ESP32 (ou compatível com conectividade Wi-Fi)
-- 1x Display LCD 1602A (com interface paralela padrão)
-- 1x Potenciômetro de 10kΩ (para ajustar o contraste do LCD)
-- Fios e jumpers
-
-**Pinagem padrão (LiquidCrystal):**
-| LCD Pin | Nome | Conexão ESP32 |
-| :---: | :---: | :---: |
-| 3 | V0 | Pino 13 (PWM para Contraste) |
-| 4 | RS | Pino 19 |
-| 6 | E | Pino 23 |
-| 11 | D4 | Pino 18 |
-| 12 | D5 | Pino 17 |
-| 13 | D6 | Pino 16 |
-| 14 | D7 | Pino 15 |
-
-*(Se o seu microcontrolador for diferente, ajuste os pinos no topo do arquivo `trenzin.ino`)*
+- **Rostos e expressões:** O Trenzin possui "olhos" animados no LCD (usa caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso e possui expressões para quando está focado, feliz, triste, zangado ou dormindo.
+- **Temporizador Pomodoro:**
+  - Foco (25 min padrão), pausa curta (5 min) e pausa longa (15 min).
+  - O estado do temporizador (ativo, pausado, tempo restante) é sincronizado em tempo real entre o hardware (LCD) e múltiplos clientes Web via WebSockets.
+- **Sistema de múltiplos alarmes:**
+  - Suporta até 10 alarmes diferentes.
+  - Permite configurar hora, minuto, título/nome personalizado e ligar/desligar individualmente pela interface web.
+- **Conectividade smart:**
+  - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
+  - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
+  - **mDNS:** Permite acessar a interface do robô digitando `http://trenzin.local` no navegador.
+- **Web app integrado (SPA):**
+  - Hospedado no próprio chip ESP32 (servidor Web embutido).
+  - Interface desenvolvida em Vanilla JS, HTML e CSS (sem dependências pesadas de frameworks) com tema escuro elegante.
 
 ---
 
-## 🚀 Primeiro acesso & configuração
+## 🔌 Hardware e diagrama de ligações
 
-O Trenzin foi feito para ser amigável. Para usar na casa de um amigo ou em um escritório novo, você não precisa reinstalar nenhum código. Siga estes passos:
+**Componentes:**
+- 1x Placa de desenvolvimento ESP32 (NodeMCU-32S, ESP32-WROOM, etc.)
+- 1x Display LCD 1602A (16x2 com backlight)
+- *Opcional:* Potenciômetro para ajuste de contraste manual (estamos usando PWM via código no GPIO 13 no lugar do potenciômetro para ajuste via software).
 
-1. **Ligue o Trenzin na energia.** (Pode ser no USB do computador ou em um carregador de celular).
-2. Como ele ainda não conhece o Wi-Fi do local, ele mesmo criará uma rede Wi-Fi própria (Access Point) chamada:  
-   👉 **`trenzin-by-magicoven`**
-3. Pegue seu celular ou computador e **conecte-se a essa rede Wi-Fi**.
-4. Uma página de configuração abrirá automaticamente (Portal Cativo). Caso não abra, acesse `http://192.168.4.1` no seu navegador.
-5. Na lista que aparecer, selecione a rede Wi-Fi da sua casa, coloque a senha e salve!
-6. O Trenzin vai reiniciar sozinho e conectar na sua rede local. A partir desse momento, a tela dele exibirá a mensagem de que ele está aguardando o App.
+**⚠️ IMPORTANTE (nível lógico):** 
+O ESP32 trabalha com 3.3V, mas a tela LCD opera em 5V. Como *não* estamos usando um conversor de nível lógico, é **CRÍTICO** aterrar o pino R/W da tela para garantir que o LCD nunca envie 5V de volta para os pinos do ESP32 (funcionamento write-only).
 
----
+**Esquema de ligação (modo paralelo de 4-bits):**
 
-## 📱 Usando o dashboard (App)
-
-Uma vez conectado no seu Wi-Fi, controlar o Trenzin é a coisa mais fácil do mundo:
-
-1. Abra o navegador do seu celular ou computador (que deve estar conectado **no mesmo Wi-Fi**).
-2. Acesse:  
-   👉 **[http://trenzin.local](http://trenzin.local)**
-3. A página de controle carregará instantaneamente. Lá você pode:
-   - Trocar a carinha do Trenzin no painel **Expressions**.
-   - Digitar mensagens de até 16 caracteres e enviar para a tela em **Send message**.
-   - Controlar as sessões de trabalho através do **Pomodoro timer**.
-
-> **Dica de ouro:** Adicione a página `trenzin.local` à **Tela de início** do seu celular (iOS/Android). O design foi pensado para remover a barra de endereços do navegador e funcionar exatamente como um aplicativo nativo!
-
----
-
-## 💻 Guia para desenvolvedores
-
-Se você for modificar o código-fonte, saiba como o projeto está estruturado:
-
-- **`/trenzin/trenzin.ino`**: O código principal em C++ responsável pelo controle do display LCD, WebSockets, portal Wi-Fi e Servidor Web HTTP.
-- **`/web`**: Os arquivos do frontend da aplicação web (`index.html`, `style.css`, `app.js`).
-- **`/build_web.js`**: O empacotador. Todo arquivo que está na pasta web precisa ser minificado e convertido para uma variável C++ para que o ESP32 possa servir a página na rede.
-
-### Como modificar a página web:
-Sempre que fizer qualquer alteração nos arquivos HTML, CSS ou JS da pasta `web/`, abra o terminal na raiz do projeto e rode:
-
-```bash
-node build_web.js
-```
-
-Isso vai ler todos os arquivos da web, empacotá-los e regerar automaticamente o arquivo `/trenzin/web_assets.h`. Feito isso, basta abrir a Arduino IDE e fazer o *upload* do `trenzin.ino` novamente.
+| Pino LCD 1602A | Nome LCD | Ligação no ESP32 | Observação |
+|---|---|---|---|
+| 1 | VSS | GND | Terra |
+| 2 | VDD | 5V / VIN | Alimentação da tela |
+| 3 | V0 / VO | GPIO 13 | Contraste gerado via PWM (`analogWrite`) |
+| 4 | RS | GPIO 19 | Register Select |
+| 5 | R/W | GND | **CRÍTICO:** Aterrar para proteger o ESP32 |
+| 6 | E / EN | GPIO 23 | Enable |
+| 11 | D4 | GPIO 18 | Data pin |
+| 12 | D5 | GPIO 17 | Data pin |
+| 13 | D6 | GPIO 16 | Data pin |
+| 14 | D7 | GPIO 15 | Data pin |
+| 15 | A | 5V / VIN | Anodo do backlight (pode usar um resistor de 220Ω) |
+| 16 | K | GND | Cátodo do backlight |
 
 ---
 
-<p align="center">
-  Desenvolvido com café por <b>MagicOven</b>
-</p>
+## 💻 Tecnologias utilizadas
+
+- **C++ (Arduino core para ESP32):** Lógica do hardware e controle do display.
+- **WebSocketsServer:** Para comunicação bidirecional em tempo real entre a interface web e o hardware.
+- **Node.js (build_web.js):** Um script customizado criado para ler os arquivos web (HTML/CSS/JS), minificá-los, zipar e transformá-los num arquivo C++ (`web_assets.h`) usando matrizes `PROGMEM`.
+- **Vanilla JS, HTML5, CSS3:** Stack frontend.
+- **Lucide Icons:** Conjunto de ícones leves renderizados via SVG na interface gráfica.
+
+---
+
+## 🧗 Desafios e soluções no desenvolvimento
+
+Para chegar na versão estável e fluida do Trenzin OS 2.0, passamos por uma série de pedreiras técnicas notáveis:
+
+1. **Gestão de espaço no ESP32 (frontend embutido):**
+   * *Desafio:* Hospedar arquivos `.html`, `.css` e `.js` pesados na flash do ESP32 era inviável com a biblioteca `WebServer` padrão por causa da RAM, além de ser terrível desenvolver strings HTML dentro do código C++.
+   * *Solução:* Separamos o ambiente de desenvolvimento web em uma pasta à parte e escrevemos o `build_web.js`. Sempre que o layout web muda, o script Node lê a pasta `/web`, remove espaços inúteis e injeta tudo em um arquivo `web_assets.h`.
+
+2. **O bug do Pomodoro automático (race condition via WebSocket):**
+   * *Desafio:* Sempre que o celular se conectava na rede ou atualizava a página, a sessão do Pomodoro iniciava sozinha, sem o usuário apertar "Iniciar".
+   * *Solução:* Identificamos que a função JavaScript `onConnect` disparava para o servidor o comando `TMR:FOCUS`, achando que era apenas um "sync", mas o Arduino interpretava como "dar play". Removemos a linha ofensiva e implementamos um `sendTimerState()` no C++ para ser a "fonte da verdade".
+
+3. **O inferno do cache mobile:**
+   * *Desafio:* Nós compilávamos alterações no frontend e enviávamos para a placa, mas os iPhones e navegadores Safari/Chrome continuavam exibindo os erros e cores antigas devido ao cache persistente.
+   * *Solução:* Configuração estrita do servidor Web C++ para retornar os headers HTTP: `Cache-Control: no-cache, no-store, must-revalidate`.
+
+4. **100vh vs iOS viewport (o footer escondido):**
+   * *Desafio:* A interface web no mobile ficava quebrada com o *footer* fixado embaixo da barra de endereços do iPhone (sendo obrigado a rolar a tela).
+   * *Solução:* Substituímos o ultrapassado `100vh` pelas unidades dinâmicas modernas do CSS: `100dvh` (dynamic viewport height).
+
+5. **Interface sem fio do 1602A (limitação de custom chars):**
+   * *Desafio:* O chip padrão HD44780 do LCD só permite 8 caracteres customizados carregados na RAM ao mesmo tempo. 
+   * *Solução:* Fizemos um sistema robusto de estado em `loadExpressionChars()` que substitui e redesenha os arrays na memória do LCD dinamicamente na transição entre expressões.
+
+---
+
+## 🚀 Como operar e modificar
+
+1. Altere o código HTML/CSS/JS na pasta `web/`.
+2. Rode o construtor usando o Node: `node build_web.js`.
+3. Verifique se o `trenzin/web_assets.h` foi gerado/atualizado.
+4. Faça upload pelo IDE do Arduino (ou `arduino-cli`) para o ESP32 (`trenzin.ino`).
+5. Quando o robô ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Trenzin-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
+6. Digite `http://trenzin.local` no seu navegador!
+
+<div align="center">
+  <i>Criado com muito café pela MagicOven. ☕</i>
+</div>

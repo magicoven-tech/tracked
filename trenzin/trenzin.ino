@@ -137,7 +137,7 @@ void setup() {
   loadExpressionChars(EXPR_IDLE);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("Trenzin OS 2.0");
+  lcd.print("Trenzin OS");
   lcd.setCursor(0, 1);
   lcd.print("Conectando...");
 
