@@ -994,9 +994,9 @@ body {
 }
 
 .alarm-card--on .alarm-toggle-btn {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+  background: #ffffff;
+  color: #363945;
+  box-shadow: none;
 }
 
 .alarm-card-bottom {

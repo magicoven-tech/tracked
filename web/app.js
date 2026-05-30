@@ -420,7 +420,7 @@ async function handleConnect() {
   trenzinConn.onConnect = () => {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-    
+
     alarms.forEach(a => {
       trenzinConn.send(`ALM:SET:${a.id}:${a.h}:${a.m}`);
       trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
@@ -660,9 +660,9 @@ function openAlarmModal(id) {
   editingAlarmId = id;
   const modal = $('#alarm-modal');
   const title = document.getElementById('alarm-modal-title-text') || modal.querySelector('.modal-section-title span');
-  
+
   if (title) title.textContent = id !== null ? 'EDITAR ALARME' : 'NOVO ALARME';
-  
+
   if (id !== null) {
     const a = alarms.find(x => x.id === id);
     $('#input-alarm-h').value = a ? a.h : 0;
@@ -673,7 +673,7 @@ function openAlarmModal(id) {
     $('#input-alarm-m').value = 0;
     $('#btn-delete-alarm').style.display = 'none';
   }
-  
+
   modal.classList.add('active');
 }
 
@@ -681,12 +681,12 @@ function renderAlarms() {
   const list = $('#alarms-list');
   if (!list) return;
   list.innerHTML = '';
-  
+
   alarms.forEach(a => {
     const hh = a.h.toString().padStart(2, '0');
     const mm = a.m.toString().padStart(2, '0');
     const stateClass = a.enabled ? 'alarm-card--on' : 'alarm-card--off';
-    
+
     const card = document.createElement('div');
     card.className = `alarm-card ${stateClass}`;
     card.innerHTML = `
@@ -700,7 +700,7 @@ function renderAlarms() {
         <div class="alarm-card-time">${hh}:${mm}</div>
       </div>
     `;
-    
+
     // Toggle
     const toggle = card.querySelector('.alarm-toggle-btn');
     toggle.addEventListener('click', (e) => {
@@ -712,12 +712,12 @@ function renderAlarms() {
         trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
       }
     });
-    
+
     // Edit
     card.addEventListener('click', () => {
       openAlarmModal(a.id);
     });
-    
+
     list.appendChild(card);
   });
 }
