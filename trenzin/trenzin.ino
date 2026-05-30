@@ -17,8 +17,8 @@
 #include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
-#include <time.h>
 #include <WiFiManager.h>
+#include <time.h>
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
@@ -69,10 +69,14 @@ String tempMessage = "";
 unsigned long tempMsgTimeout = 0;
 
 // ── Alarm State ────────────────────────────────────────────
-bool alarmEnabled = false;
-int alarmHour = 7;
-int alarmMinute = 0;
-bool alarmTriggeredToday = false;
+#define MAX_ALARMS 10
+struct AlarmConfig {
+  bool enabled;
+  int hour;
+  int minute;
+  bool triggeredToday;
+};
+AlarmConfig alarms[MAX_ALARMS];
 int currentDay = -1;
 
 // ── Custom Characters (5×8 pixels) ────────────────────────
@@ -141,7 +145,7 @@ void setup() {
   WiFiManager wifiManager;
   // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar
   // o portal cativo, descomente a linha abaixo.
-  //wifiManager.resetSettings();
+  // wifiManager.resetSettings();
 
   // Tenta conectar nas redes conhecidas.
   // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado
@@ -297,13 +301,17 @@ void loop() {
     if (getLocalTime(&timeinfo, 0)) { // 0ms timeout (non-blocking if synced)
       if (currentDay != timeinfo.tm_mday) {
         currentDay = timeinfo.tm_mday;
-        alarmTriggeredToday = false;
+        for (int i = 0; i < MAX_ALARMS; i++)
+          alarms[i].triggeredToday = false;
       }
-      
-      if (alarmEnabled && !alarmTriggeredToday && 
-          timeinfo.tm_hour == alarmHour && timeinfo.tm_min == alarmMinute) {
-        triggerAlarm();
-        alarmTriggeredToday = true;
+
+      for (int i = 0; i < MAX_ALARMS; i++) {
+        if (alarms[i].enabled && !alarms[i].triggeredToday &&
+            timeinfo.tm_hour == alarms[i].hour &&
+            timeinfo.tm_min == alarms[i].minute) {
+          triggerAlarm();
+          alarms[i].triggeredToday = true;
+        }
       }
     }
   }
@@ -392,24 +400,40 @@ void processCommand(String cmd) {
     sendToClients("ACK:MSG");
   } else if (cmd.startsWith("ALM:")) {
     String action = cmd.substring(4);
-    if (action.startsWith("SET:")) {
-      int colonIdx = action.indexOf(':', 4);
-      if (colonIdx != -1) {
-        alarmHour = action.substring(4, colonIdx).toInt();
-        alarmMinute = action.substring(colonIdx + 1).toInt();
-        alarmTriggeredToday = false; // Reset trigger so it can ring if time is now
+    int colonIdx = action.indexOf(':');
+    String verb = (colonIdx != -1) ? action.substring(0, colonIdx) : action;
+
+    if (verb == "SET") {
+      int idIdx = action.indexOf(':', colonIdx + 1);
+      if (idIdx != -1) {
+        int id = action.substring(colonIdx + 1, idIdx).toInt();
+        int nextColon = action.indexOf(':', idIdx + 1);
+        if (id >= 0 && id < MAX_ALARMS && nextColon != -1) {
+          alarms[id].hour = action.substring(idIdx + 1, nextColon).toInt();
+          alarms[id].minute = action.substring(nextColon + 1).toInt();
+          alarms[id].triggeredToday = false;
+        }
       }
-    } else if (action == "ON") {
-      alarmEnabled = true;
-      alarmTriggeredToday = false;
-    } else if (action == "OFF") {
-      alarmEnabled = false;
-      if (tempMessage.indexOf("ALARME!") != -1) {
-        tempMessage = "";
-        tempMsgTimeout = 0;
-        lastDrawnMsg = "";
-        setExpression(EXPR_IDLE);
-        drawStatusLine();
+    } else if (verb == "ON" || verb == "OFF" || verb == "DEL") {
+      int id = action.substring(colonIdx + 1).toInt();
+      if (id >= 0 && id < MAX_ALARMS) {
+        if (verb == "ON") {
+          alarms[id].enabled = true;
+          alarms[id].triggeredToday = false;
+        } else if (verb == "OFF") {
+          alarms[id].enabled = false;
+          if (tempMessage.indexOf("ALARME!") != -1) {
+            tempMessage = "";
+            tempMsgTimeout = 0;
+            lastDrawnMsg = "";
+            setExpression(EXPR_IDLE);
+            drawStatusLine();
+          }
+        } else if (verb == "DEL") {
+          alarms[id].enabled = false;
+          alarms[id].hour = 0;
+          alarms[id].minute = 0;
+        }
       }
     }
     sendToClients("ACK:" + cmd);
