@@ -182,11 +182,19 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
-  // Setup Web Server Routes
-  server.on("/", []() { server.send(200, "text/html", WEB_HTML); });
-  server.on("/style.css", []() { server.send(200, "text/css", WEB_CSS); });
-  server.on("/app.js",
-            []() { server.send(200, "application/javascript", WEB_JS); });
+  // Setup Web Server Routes (com anti-cache)
+  server.on("/", []() {
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    server.send(200, "text/html", WEB_HTML);
+  });
+  server.on("/style.css", []() {
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    server.send(200, "text/css", WEB_CSS);
+  });
+  server.on("/app.js", []() {
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    server.send(200, "application/javascript", WEB_JS);
+  });
   server.begin();
 
   // Initialize UI

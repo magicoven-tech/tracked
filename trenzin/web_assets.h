@@ -1440,6 +1440,7 @@ function updateDateDisplay() {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  initAlarm();
   updateLCDFace(currentExpression);
   updateLCDPreview();
   updateDateDisplay();
@@ -1653,7 +1654,6 @@ async function handleConnect() {
   trenzinConn.onConnect = () => {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
     
     alarms.forEach(a => {
       trenzinConn.send(`ALM:SET:${a.id}:${a.h}:${a.m}`);

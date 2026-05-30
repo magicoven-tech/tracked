@@ -206,6 +206,7 @@ function updateDateDisplay() {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   updateTimerDisplay();
+  initAlarm();
   updateLCDFace(currentExpression);
   updateLCDPreview();
   updateDateDisplay();
