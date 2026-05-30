@@ -314,6 +314,7 @@ function setupEventListeners() {
   $('#btn-save-alarm').addEventListener('click', () => {
     let h = parseInt($('#input-alarm-h').value) || 0;
     let m = parseInt($('#input-alarm-m').value) || 0;
+    let label = $('#input-alarm-label').value.trim();
     if (h < 0) h = 0; if (h > 23) h = 23;
     if (m < 0) m = 0; if (m > 59) m = 59;
 
@@ -323,6 +324,7 @@ function setupEventListeners() {
       if (idx !== -1) {
         alarms[idx].h = h;
         alarms[idx].m = m;
+        alarms[idx].label = label || `Alarme ${alarms[idx].id + 1}`;
         if (trenzinConn.connected) {
           trenzinConn.send(`ALM:SET:${editingAlarmId}:${h}:${m}`);
         }
@@ -334,7 +336,7 @@ function setupEventListeners() {
         return;
       }
       const newId = alarms.length > 0 ? Math.max(...alarms.map(a => a.id)) + 1 : 0;
-      const newAlarm = { id: newId, h, m, enabled: true, label: `Alarme ${newId + 1}` };
+      const newAlarm = { id: newId, h, m, enabled: true, label: label || `Alarme ${newId + 1}` };
       alarms.push(newAlarm);
       if (trenzinConn.connected) {
         trenzinConn.send(`ALM:SET:${newAlarm.id}:${newAlarm.h}:${newAlarm.m}`);
@@ -667,10 +669,12 @@ function openAlarmModal(id) {
     const a = alarms.find(x => x.id === id);
     $('#input-alarm-h').value = a ? a.h : 0;
     $('#input-alarm-m').value = a ? a.m : 0;
+    $('#input-alarm-label').value = a ? (a.label || '') : '';
     $('#btn-delete-alarm').style.display = 'block';
   } else {
     $('#input-alarm-h').value = 7;
     $('#input-alarm-m').value = 0;
+    $('#input-alarm-label').value = '';
     $('#btn-delete-alarm').style.display = 'none';
   }
 
@@ -690,13 +694,13 @@ function renderAlarms() {
     const card = document.createElement('div');
     card.className = `alarm-card ${stateClass}`;
     card.innerHTML = `
-      <div class="alarm-card-header">
-        <div class="alarm-card-label">${a.label}</div>
+      <div class="alarm-card-header" style="justify-content: flex-start;">
         <button class="alarm-toggle-btn" data-id="${a.id}">
           ${a.enabled ? 'ON' : 'OFF'}
         </button>
       </div>
       <div class="alarm-card-bottom" style="margin-top:auto">
+        <div class="alarm-card-label">${a.label}</div>
         <div class="alarm-card-time">${hh}:${mm}</div>
       </div>
     `;

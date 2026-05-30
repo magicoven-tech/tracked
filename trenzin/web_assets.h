@@ -297,6 +297,11 @@ const char WEB_HTML[] PROGMEM = R"=====(
           <span>ALARME</span>
         </div>
 
+        <div class="input-group" style="margin-bottom: 20px;">
+          <label>Nome do Alarme</label>
+          <input type="text" id="input-alarm-label" placeholder="Ex: Acordar" maxlength="15" autocomplete="off">
+        </div>
+
         <h4 class="modal-label">Hora do alarme</h4>
         <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 24px;">
           <div class="input-group" style="flex: 1;">
@@ -1548,6 +1553,7 @@ function setupEventListeners() {
   $('#btn-save-alarm').addEventListener('click', () => {
     let h = parseInt($('#input-alarm-h').value) || 0;
     let m = parseInt($('#input-alarm-m').value) || 0;
+    let label = $('#input-alarm-label').value.trim();
     if (h < 0) h = 0; if (h > 23) h = 23;
     if (m < 0) m = 0; if (m > 59) m = 59;
 
@@ -1557,6 +1563,7 @@ function setupEventListeners() {
       if (idx !== -1) {
         alarms[idx].h = h;
         alarms[idx].m = m;
+        alarms[idx].label = label || `Alarme ${alarms[idx].id + 1}`;
         if (trenzinConn.connected) {
           trenzinConn.send(`ALM:SET:${editingAlarmId}:${h}:${m}`);
         }
@@ -1568,7 +1575,7 @@ function setupEventListeners() {
         return;
       }
       const newId = alarms.length > 0 ? Math.max(...alarms.map(a => a.id)) + 1 : 0;
-      const newAlarm = { id: newId, h, m, enabled: true, label: `Alarme ${newId + 1}` };
+      const newAlarm = { id: newId, h, m, enabled: true, label: label || `Alarme ${newId + 1}` };
       alarms.push(newAlarm);
       if (trenzinConn.connected) {
         trenzinConn.send(`ALM:SET:${newAlarm.id}:${newAlarm.h}:${newAlarm.m}`);
@@ -1654,7 +1661,7 @@ async function handleConnect() {
   trenzinConn.onConnect = () => {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-    
+
     alarms.forEach(a => {
       trenzinConn.send(`ALM:SET:${a.id}:${a.h}:${a.m}`);
       trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
@@ -1894,20 +1901,22 @@ function openAlarmModal(id) {
   editingAlarmId = id;
   const modal = $('#alarm-modal');
   const title = document.getElementById('alarm-modal-title-text') || modal.querySelector('.modal-section-title span');
-  
+
   if (title) title.textContent = id !== null ? 'EDITAR ALARME' : 'NOVO ALARME';
-  
+
   if (id !== null) {
     const a = alarms.find(x => x.id === id);
     $('#input-alarm-h').value = a ? a.h : 0;
     $('#input-alarm-m').value = a ? a.m : 0;
+    $('#input-alarm-label').value = a ? (a.label || '') : '';
     $('#btn-delete-alarm').style.display = 'block';
   } else {
     $('#input-alarm-h').value = 7;
     $('#input-alarm-m').value = 0;
+    $('#input-alarm-label').value = '';
     $('#btn-delete-alarm').style.display = 'none';
   }
-  
+
   modal.classList.add('active');
 }
 
@@ -1915,26 +1924,26 @@ function renderAlarms() {
   const list = $('#alarms-list');
   if (!list) return;
   list.innerHTML = '';
-  
+
   alarms.forEach(a => {
     const hh = a.h.toString().padStart(2, '0');
     const mm = a.m.toString().padStart(2, '0');
     const stateClass = a.enabled ? 'alarm-card--on' : 'alarm-card--off';
-    
+
     const card = document.createElement('div');
     card.className = `alarm-card ${stateClass}`;
     card.innerHTML = `
-      <div class="alarm-card-header">
-        <div class="alarm-card-label">${a.label}</div>
+      <div class="alarm-card-header" style="justify-content: flex-start;">
         <button class="alarm-toggle-btn" data-id="${a.id}">
           ${a.enabled ? 'ON' : 'OFF'}
         </button>
       </div>
       <div class="alarm-card-bottom" style="margin-top:auto">
+        <div class="alarm-card-label">${a.label}</div>
         <div class="alarm-card-time">${hh}:${mm}</div>
       </div>
     `;
-    
+
     // Toggle
     const toggle = card.querySelector('.alarm-toggle-btn');
     toggle.addEventListener('click', (e) => {
@@ -1946,12 +1955,12 @@ function renderAlarms() {
         trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
       }
     });
-    
+
     // Edit
     card.addEventListener('click', () => {
       openAlarmModal(a.id);
     });
-    
+
     list.appendChild(card);
   });
 }
