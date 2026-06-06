@@ -6,7 +6,7 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 
 ## 🛠 Funcionalidades do sistema
 
-- **Rostos e expressões:** O Trenzin possui "olhos" animados no LCD (usa caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso e possui expressões para quando está focado, feliz, triste, zangado ou dormindo.
+- **Rostos e expressões:** O Trenzin possui 10 expressões dinâmicas com "olhos" animados no LCD (usando caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso (Idle) e conta com expressões de Feliz, Triste, Zangado, Focado (Focus), Dormindo (Sleep), Love (coração), Surpreso, Estrela e Tonto (X_X).
 - **Temporizador Pomodoro:**
   - Foco (25 min padrão), pausa curta (5 min) e pausa longa (15 min).
   - O estado do temporizador (ativo, pausado, tempo restante) é sincronizado em tempo real entre o hardware (LCD) e múltiplos clientes Web via WebSockets.

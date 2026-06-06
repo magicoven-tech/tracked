@@ -36,7 +36,11 @@ enum Expression {
   EXPR_SAD,
   EXPR_ANGRY,
   EXPR_FOCUS,
-  EXPR_SLEEP
+  EXPR_SLEEP,
+  EXPR_LOVE,
+  EXPR_SURPRISED,
+  EXPR_STAR,
+  EXPR_DIZZY
 };
 
 enum TimerState {
@@ -104,6 +108,18 @@ byte eyeAngry[8] = {B10000, B01000, B01110, B10001,
 // Slot 7: Focus eye (determined squint)
 byte eyeFocus[8] = {B00000, B00000, B01110, B10001,
                     B10011, B01110, B00000, B00000};
+// Slot 8: Love eye (Heart)
+byte eyeLove[8] = {B00000, B01010, B11111, B11111,
+                   B01110, B00100, B00000, B00000};
+// Slot 9: Surprised eye
+byte eyeSurprised[8] = {B00000, B01110, B10001, B10101,
+                        B10101, B10001, B01110, B00000};
+// Slot 10: Star eye
+byte eyeStar[8] = {B00100, B10101, B01110, B11111,
+                   B01110, B10101, B00100, B00000};
+// Slot 11: Dizzy eye (X shape)
+byte eyeDizzy[8] = {B00000, B10001, B01010, B00100,
+                    B01010, B10001, B00000, B00000};
 
 // ── Redraw Helpers ─────────────────────────────────────────
 Expression lastDrawnExpr = (Expression)255;
@@ -371,6 +387,14 @@ void processCommand(String cmd) {
       setExpression(EXPR_FOCUS);
     else if (expr == "SLEEP")
       setExpression(EXPR_SLEEP);
+    else if (expr == "LOVE")
+      setExpression(EXPR_LOVE);
+    else if (expr == "SURPRISED")
+      setExpression(EXPR_SURPRISED);
+    else if (expr == "STAR")
+      setExpression(EXPR_STAR);
+    else if (expr == "DIZZY")
+      setExpression(EXPR_DIZZY);
     sendToClients("ACK:" + cmd);
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
@@ -501,6 +525,18 @@ void setExpression(Expression expr) {
   case EXPR_SLEEP:
     exprName = "SLEEP";
     break;
+  case EXPR_LOVE:
+    exprName = "LOVE";
+    break;
+  case EXPR_SURPRISED:
+    exprName = "SURPRISED";
+    break;
+  case EXPR_STAR:
+    exprName = "STAR";
+    break;
+  case EXPR_DIZZY:
+    exprName = "DIZZY";
+    break;
   }
   sendToClients("FACE:" + exprName);
 }
@@ -531,6 +567,22 @@ void loadExpressionChars(Expression expr) {
   case EXPR_SLEEP:
     lcd.createChar(0, eyeClosed);
     lcd.createChar(1, eyeClosed);
+    break;
+  case EXPR_LOVE:
+    lcd.createChar(0, eyeLove);
+    lcd.createChar(1, eyeLove);
+    break;
+  case EXPR_SURPRISED:
+    lcd.createChar(0, eyeSurprised);
+    lcd.createChar(1, eyeSurprised);
+    break;
+  case EXPR_STAR:
+    lcd.createChar(0, eyeStar);
+    lcd.createChar(1, eyeStar);
+    break;
+  case EXPR_DIZZY:
+    lcd.createChar(0, eyeDizzy);
+    lcd.createChar(1, eyeDizzy);
     break;
   }
 }

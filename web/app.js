@@ -599,6 +599,10 @@ function updateLCDFace(expr) {
     angry: '     >·><·<     ',
     focus: '     =    =     ',
     sleep: '    - _- z Z    ',
+    love: '     ♥    ♥     ',
+    surprised: '     ⊙    ⊙     ',
+    star: '     ★    ★     ',
+    dizzy: '     X    X     ',
   };
   lcdRow0 = faceMap[expr] || faceMap.idle;
 }

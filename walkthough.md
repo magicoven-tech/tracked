@@ -8,7 +8,7 @@ trenzin.ino
 Sketch completo (~570 linhas) com:
 
 Feature	Detalhes
-6 Expressões	Idle (com blink automático), Happy (^_^), Sad, Angry, Focus, Sleep
+10 Expressões	Idle (com blink automático), Happy (^_^), Sad, Angry, Focus, Sleep, Love (corações), Surpreso (olhos abertos), Estrela e Tonto (x_x)
 Custom Characters	8 caracteres customizados (5×8 pixels) para os olhinhos no LCD
 Blink Animation	Piscar automático a cada 2.5-5s no modo idle (intervalo aleatório)
 Pomodoro Timer	Focus (25min) + Break (5min) com countdown no LCD
@@ -91,6 +91,6 @@ Web Serial API	✅ Handlers configurados corretamente (before connect)
 MSG case preservation	✅ Mensagens preservam maiúsculas/minúsculas originais
 Próximos Passos Opcionais
 🔊 Buzzer — Adicionar alarme sonoro quando o timer terminar
-🎨 Mais expressões — Love (corações), Surprised, etc.
-📱 PWA — Converter o dashboard web em Progressive Web App
+✅ 🎨 Mais expressões — Love (corações), Surprised, etc.
+✅ 📱 PWA — Converter o dashboard web em Progressive Web App
 ⌨️ Botões físicos — Adicionar botões na protoboard para controle sem PC
