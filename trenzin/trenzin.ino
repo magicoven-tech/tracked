@@ -195,6 +195,22 @@ void setup() {
     server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/javascript", WEB_JS);
   });
+  server.on("/manifest.json", []() {
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    server.send(200, "application/json", WEB_MANIFEST);
+  });
+  server.on("/sw.js", []() {
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    server.send(200, "application/javascript", WEB_SW);
+  });
+  server.on("/icon.svg", []() {
+    server.sendHeader("Cache-Control", "max-age=604800, public");
+    server.send(200, "image/svg+xml", WEB_ICON);
+  });
+  server.on("/icon-192.png", []() {
+    server.sendHeader("Cache-Control", "max-age=604800, public");
+    server.send_P(200, "image/png", (const char*)WEB_ICON_PNG, WEB_ICON_PNG_LEN);
+  });
   server.begin();
 
   // Initialize UI

@@ -17,9 +17,10 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
   - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
   - **mDNS:** Permite acessar a interface do robô digitando `http://trenzin.local` no navegador.
-- **Web app integrado (SPA):**
+- **Web app integrado (SPA & PWA):**
   - Hospedado no próprio chip ESP32 (servidor Web embutido).
   - Interface desenvolvida em Vanilla JS, HTML e CSS (sem dependências pesadas de frameworks) com tema escuro elegante.
+  - **Progressive Web App (PWA):** Instale o painel como um aplicativo nativo no celular ou desktop para ter ícone na tela inicial e acesso em tela cheia (standalone) como um app de verdade.
 
 ---
 
@@ -74,9 +75,9 @@ Para chegar na versão estável e fluida do Trenzin OS 2.0, passamos por uma sé
    * *Desafio:* Sempre que o celular se conectava na rede ou atualizava a página, a sessão do Pomodoro iniciava sozinha, sem o usuário apertar "Iniciar".
    * *Solução:* Identificamos que a função JavaScript `onConnect` disparava para o servidor o comando `TMR:FOCUS`, achando que era apenas um "sync", mas o Arduino interpretava como "dar play". Removemos a linha ofensiva e implementamos um `sendTimerState()` no C++ para ser a "fonte da verdade".
 
-3. **O inferno do cache mobile:**
-   * *Desafio:* Nós compilávamos alterações no frontend e enviávamos para a placa, mas os iPhones e navegadores Safari/Chrome continuavam exibindo os erros e cores antigas devido ao cache persistente.
-   * *Solução:* Configuração estrita do servidor Web C++ para retornar os headers HTTP: `Cache-Control: no-cache, no-store, must-revalidate`.
+3. **O inferno do cache mobile e a saga do PWA:**
+   * *Desafio:* iPhones e navegadores Safari/Chrome continuavam exibindo páginas antigas devido ao cache persistente. Além disso, a Apple tem regras extremamente restritas para ícones PWA, ignorando SVGs e exigindo a entrega de arquivos PNG físicos.
+   * *Solução:* Para o cache, adicionamos headers `Cache-Control: no-cache`. Para o PWA, criamos um Service Worker (`sw.js`) e um Manifesto. Além disso, atualizamos o `build_web.js` para ler um PNG convertido fisicamente, convertê-lo em um array de bytes hexadecimal (`PROGMEM`) e enviar o binário via C++ puro para fazer o `apple-touch-icon` brilhar na tela inicial dos usuários!
 
 4. **100vh vs iOS viewport (o footer escondido):**
    * *Desafio:* A interface web no mobile ficava quebrada com o *footer* fixado embaixo da barra de endereços do iPhone (sendo obrigado a rolar a tela).

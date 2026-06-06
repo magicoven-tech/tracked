@@ -216,6 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.hostname && window.location.hostname !== 'localhost') {
     handleConnect();
   }
+
+  // Registrar Service Worker para PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('Service Worker registrado:', reg.scope))
+      .catch(err => console.error('Erro no Service Worker:', err));
+  }
 });
 
 // ── Event Listeners ────────────────────────────────────────
