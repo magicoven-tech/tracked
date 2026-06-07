@@ -17,9 +17,11 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
   - Integração de 4 push buttons (GPIO 25, 26, 27 e 32) com *debounce non-blocking* para controle direto.
   - Permite iniciar/pausar e parar o Pomodoro, além de ciclar manualmente pelas expressões, tudo sem depender da interface Web.
 - **Configuração Local e Memória Não-Volátil (NVRAM):**
-  - Integração com Potenciômetro Linear 10KΩ (GPIO 34) para ajuste fino do tempo de Foco, Pausa Curta e Pausa Longa direto na tela do LCD.
-  - Salva automaticamente as durações escolhidas na memória flash interna usando `<Preferences.h>`.
-  - **Sincronização Bidirecional (`CFG:POMO`):** Qualquer alteração de tempo feita no site atualiza imediatamente o hardware (e salva na flash). Da mesma forma, alterações feitas via Potenciômetro são transmitidas na hora para atualizar o site em todos os dispositivos conectados.
+  - Integração com Potenciômetro Linear 10KΩ (GPIO 34) e menu interativo no LCD para configurar os tempos do Pomodoro e os Alarmes fisicamente.
+  - **Duração do Pomodoro:** Ajuste fino de Foco (1-60 min), Pausa Curta (1-30 min) e Pausa Longa (1-45 min) usando variáveis temporárias (as alterações só se tornam ativas ao salvar).
+  - **Configuração de Alarmes:** Navegação inteligente via potenciômetro apenas pelos alarmes que existem/estão cadastrados no sistema (evitando poluição visual), permitindo editar a hora, minuto e status (LIGADO/DESLIGADO) de forma persistente.
+  - **Salvamento Automático:** Todas as alterações feitas fisicamente são gravadas na memória Flash do chip através da biblioteca `<Preferences.h>`.
+  - **Sincronização Bidirecional em Tempo Real:** Alterações feitas na interface Web atualizam o hardware instantaneamente (e vice-versa), mantendo os alarmes e os tempos do Pomodoro sincronizados em todos os dispositivos em tempo real.
 - **Conectividade smart:**
   - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).

@@ -117,6 +117,8 @@ int setupAlarmId = 0;
 int setupAlarmHour = 0;
 int setupAlarmMinute = 0;
 bool setupAlarmEnabled = false;
+int existingAlarmIds[MAX_ALARMS];
+int existingAlarmCount = 0;
 
 // Variáveis para configuração de pomodoro via potenciômetro
 unsigned long setupFocusDuration = 0;
@@ -217,7 +219,50 @@ unsigned long lastBtnExprTime = 0;
 unsigned long lastBtnSetupTime = 0;
 const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
 
+void updateExistingAlarms() {
+  existingAlarmCount = 0;
+
+  // 1. Coleta todos os alarmes que já existem (configurados)
+  for (int i = 0; i < MAX_ALARMS; i++) {
+    if (alarms[i].enabled || alarms[i].hour != 0 || alarms[i].minute != 0) {
+      existingAlarmIds[existingAlarmCount] = i;
+      existingAlarmCount++;
+    }
+  }
+
+  // 2. Encontra o primeiro alarme não utilizado (se houver espaço) para poder
+  // criá-lo
+  if (existingAlarmCount < MAX_ALARMS) {
+    for (int i = 0; i < MAX_ALARMS; i++) {
+      bool alreadyInList = false;
+      for (int j = 0; j < existingAlarmCount; j++) {
+        if (existingAlarmIds[j] == i) {
+          alreadyInList = true;
+          break;
+        }
+      }
+      if (!alreadyInList) {
+        existingAlarmIds[existingAlarmCount] = i;
+        existingAlarmCount++;
+        break;
+      }
+    }
+  }
+
+  // 3. Ordena os IDs para navegação sequencial no potenciômetro
+  for (int i = 0; i < existingAlarmCount - 1; i++) {
+    for (int j = 0; j < existingAlarmCount - i - 1; j++) {
+      if (existingAlarmIds[j] > existingAlarmIds[j + 1]) {
+        int temp = existingAlarmIds[j];
+        existingAlarmIds[j] = existingAlarmIds[j + 1];
+        existingAlarmIds[j + 1] = temp;
+      }
+    }
+  }
+}
+
 void checkSetupMenu() {
+
   if (currentSetupState == SETUP_OFF)
     return;
 
@@ -273,11 +318,15 @@ void checkSetupMenu() {
       break;
     }
     case SETUP_ALARM_SELECT: {
-      unsigned int alarmIndex = constrain(map(potValue, 0, 4095, 1, 10), 1, 10);
+      updateExistingAlarms();
+      int mappedIndex =
+          constrain(map(potValue, 0, 4095, 0, existingAlarmCount - 1), 0,
+                    existingAlarmCount - 1);
+      int selectedAlarmId = existingAlarmIds[mappedIndex];
       lcd.setCursor(0, 0);
       lcd.print("[Config] Alarme ");
       lcd.setCursor(0, 1);
-      snprintf(buf, sizeof(buf), "Editar Alarme: %02d", alarmIndex);
+      snprintf(buf, sizeof(buf), "Sel. Alarme: %02d ", selectedAlarmId + 1);
       lcd.print(buf);
       break;
     }
@@ -420,7 +469,11 @@ void handleSetupAdvance(bool isButton3) {
     currentSetupState = SETUP_OFF;
     showSavedMessage();
   } else if (currentSetupState == SETUP_ALARM_SELECT) {
-    setupAlarmId = constrain(map(potValue, 0, 4095, 1, 10), 1, 10) - 1;
+    updateExistingAlarms();
+    int mappedIndex =
+        constrain(map(potValue, 0, 4095, 0, existingAlarmCount - 1), 0,
+                  existingAlarmCount - 1);
+    setupAlarmId = existingAlarmIds[mappedIndex];
     // Initialize temp editing variables from current alarm config
     setupAlarmHour = alarms[setupAlarmId].hour;
     setupAlarmMinute = alarms[setupAlarmId].minute;

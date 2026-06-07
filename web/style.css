@@ -619,21 +619,14 @@ body {
 }
 
 .alarms-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  overflow-x: auto;
   padding-bottom: 24px;
-  scroll-snap-type: x mandatory;
-}
-
-.alarms-list::-webkit-scrollbar {
-  display: none;
 }
 
 .alarm-card {
-  flex: 0 0 150px;
   height: 170px;
-  scroll-snap-align: start;
   background: var(--surface);
   border-radius: 24px;
   padding: 20px;
@@ -701,6 +694,10 @@ body {
   }
 
   .expressions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alarms-list {
     grid-template-columns: 1fr;
   }
 
