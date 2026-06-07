@@ -306,7 +306,7 @@ function setupEventListeners() {
     $('#pomodoro-modal').classList.remove('active');
 
     // update hardware
-    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+    trenzinConn.send(`CFG:POMO:${timer.config.focus}:${timer.config.shortBreak}:${timer.config.longBreak}`);
   });
 
   // ── Alarm Logic ───────────────────────────────────────────
@@ -474,7 +474,27 @@ function sendExpression(expr) {
 
 // ── Parse Arduino Messages ─────────────────────────────────
 function parseArduinoMessage(data) {
-  if (data.startsWith('STATE:')) {
+  if (data.startsWith('CFG:POMO:')) {
+    const parts = data.substring(9).split(':');
+    if (parts.length >= 3) {
+      timer.config.focus = parseInt(parts[0]);
+      timer.config.shortBreak = parseInt(parts[1]);
+      timer.config.longBreak = parseInt(parts[2]);
+
+      // Update DOM inputs if modal is open
+      $('#input-focus-time').value = timer.config.focus;
+      $('#input-short-break').value = timer.config.shortBreak;
+      $('#input-long-break').value = timer.config.longBreak;
+
+      // Save locally
+      localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
+
+      // Update UI if we are in OFF state (so the 25:00 text updates)
+      if (timer.state === 'off') {
+        updateTimerDisplay();
+      }
+    }
+  } else if (data.startsWith('STATE:')) {
     const payload = data.substring(6);
 
     if (payload === 'IDLE') {

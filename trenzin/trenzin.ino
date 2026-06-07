@@ -1,6 +1,5 @@
 // ============================================================
 // Trenzin — ESP32 + LCD 1602A (Wi-Fi WebSocket)
-// A cute desk buddy with expressions & Pomodoro timer
 // ============================================================
 // Wiring (4-bit parallel mode for ESP32 - 3.3V Logic):
 //   LCD RS  → GPIO 19   LCD Enable → GPIO 23
@@ -14,22 +13,29 @@
 //   BTN_PLAY_PIN → GPIO 25 (Play/Pause Pomodoro)
 //   BTN_STOP_PIN → GPIO 26 (Stop Pomodoro)
 //   BTN_EXPR_PIN → GPIO 27 (Cycle Expressions)
+//   BTN_SETUP_PIN→ GPIO 32 (Settings Menu)
+//   POT_PIN      → GPIO 34 (Potentiometer for setup, 3.3V max)
 // ============================================================
 
 #include "web_assets.h"
 #include <ESPmDNS.h>
 #include <LiquidCrystal.h>
+#include <Preferences.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <time.h>
 
+Preferences preferences;
+
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 #define BTN_PLAY_PIN 25
 #define BTN_STOP_PIN 26
 #define BTN_EXPR_PIN 27
+#define BTN_SETUP_PIN 32
+#define POT_PIN 34
 
 // ── Wi-Fi Configuration ────────────────────────────────────
 // As credenciais agora são gerenciadas pelo WiFiManager
@@ -60,6 +66,8 @@ enum TimerState {
   TIMER_DONE
 };
 
+enum SetupState { SETUP_OFF, SETUP_FOCUS, SETUP_SHORT_BREAK, SETUP_LONG_BREAK };
+
 // ── Current State ──────────────────────────────────────────
 Expression currentExpr = EXPR_IDLE;
 TimerState timerState = TIMER_OFF;
@@ -72,9 +80,12 @@ bool isBlinking = false;
 unsigned long blinkStart = 0;
 const unsigned long BLINK_DURATION = 180; // ms
 
-// Timer durations
-const unsigned long FOCUS_DURATION = 25UL * 60; // 25 min in seconds
-const unsigned long BREAK_DURATION = 5UL * 60;  // 5 min in seconds
+// Timer durations (can be modified via Potentiometer)
+unsigned long focusDuration = 25UL * 60;     // default 25 min
+unsigned long shortBreakDuration = 5UL * 60; // default 5 min
+unsigned long longBreakDuration = 15UL * 60; // default 15 min
+
+SetupState currentSetupState = SETUP_OFF;
 
 // ── Temporary Message ──────────────────────────────────────
 String tempMessage = "";
@@ -150,11 +161,88 @@ void sendToClients(String msg) {
 unsigned long lastBtnPlayTime = 0;
 unsigned long lastBtnStopTime = 0;
 unsigned long lastBtnExprTime = 0;
+unsigned long lastBtnSetupTime = 0;
 const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
+
+void checkSetupMenu() {
+  if (currentSetupState == SETUP_OFF)
+    return;
+
+  unsigned long now = millis();
+  static unsigned long lastPotRead = 0;
+
+  // Read potentiometer every 100ms for smooth UI updates
+  if (now - lastPotRead > 100) {
+    lastPotRead = now;
+    int potValue = analogRead(POT_PIN);
+    unsigned int minutes = 0;
+
+    if (currentSetupState == SETUP_FOCUS) {
+      minutes = map(potValue, 0, 4095, 1, 60);
+      focusDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Foco   ");
+    } else if (currentSetupState == SETUP_SHORT_BREAK) {
+      minutes = map(potValue, 0, 4095, 1, 30);
+      shortBreakDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Pausa C");
+    } else if (currentSetupState == SETUP_LONG_BREAK) {
+      minutes = map(potValue, 0, 4095, 1, 45);
+      longBreakDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Pausa L");
+    }
+
+    lcd.setCursor(0, 1);
+    char buf[17];
+    snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
+    lcd.print(buf);
+  }
+}
 
 void checkButtons() {
   unsigned long now = millis();
-  
+
+  // Setup (GPIO 32)
+  if (digitalRead(BTN_SETUP_PIN) == LOW) {
+    if (now - lastBtnSetupTime > BTN_COOLDOWN) {
+      lastBtnSetupTime = now;
+      Serial.println("BTN: SETUP pressionado (GPIO 32)");
+      if (currentSetupState == SETUP_OFF) {
+        currentSetupState = SETUP_FOCUS;
+      } else if (currentSetupState == SETUP_FOCUS) {
+        currentSetupState = SETUP_SHORT_BREAK;
+      } else if (currentSetupState == SETUP_SHORT_BREAK) {
+        currentSetupState = SETUP_LONG_BREAK;
+      } else if (currentSetupState == SETUP_LONG_BREAK) {
+        currentSetupState = SETUP_OFF;
+        // Save to flash
+        preferences.putUInt("focus", focusDuration / 60);
+        preferences.putUInt("sbreak", shortBreakDuration / 60);
+        preferences.putUInt("lbreak", longBreakDuration / 60);
+        Serial.println("Configuracoes salvas na Flash!");
+
+        // Broadcast new settings to all connected Web UIs!
+        String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                        String(shortBreakDuration / 60) + ":" +
+                        String(longBreakDuration / 60);
+        webSocket.broadcastTXT(cfgMsg);
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("     Salvo!     ");
+        delay(1000);
+        lcd.clear();
+        lastDrawnExpr = (Expression)255;
+        lastDrawnTimerState = (TimerState)255;
+      }
+    }
+  }
+
+  if (currentSetupState != SETUP_OFF)
+    return; // Block other buttons while in setup
+
   // Play/Pause (GPIO 25)
   if (digitalRead(BTN_PLAY_PIN) == LOW) {
     if (now - lastBtnPlayTime > BTN_COOLDOWN) {
@@ -173,7 +261,7 @@ void checkButtons() {
         lastTimerTick = now;
       } else {
         timerState = TIMER_FOCUS;
-        timerSecondsRemaining = FOCUS_DURATION;
+        timerSecondsRemaining = focusDuration;
         lastTimerTick = now;
         setExpression(EXPR_FOCUS);
       }
@@ -201,7 +289,8 @@ void checkButtons() {
       lastBtnExprTime = now;
       Serial.println("BTN: EXPR pressionado (GPIO 27)");
       int nextExpr = (int)currentExpr + 1;
-      if (nextExpr > EXPR_DIZZY) nextExpr = EXPR_IDLE;
+      if (nextExpr > EXPR_DIZZY)
+        nextExpr = EXPR_IDLE;
       setExpression((Expression)nextExpr);
     }
   }
@@ -211,9 +300,17 @@ void checkButtons() {
 void setup() {
   Serial.begin(115200);
 
+  // Carregar preferências salvas
+  preferences.begin("trenzin", false);
+  focusDuration = preferences.getUInt("focus", 25) * 60;
+  shortBreakDuration = preferences.getUInt("sbreak", 5) * 60;
+  longBreakDuration = preferences.getUInt("lbreak", 15) * 60;
+
   pinMode(BTN_PLAY_PIN, INPUT_PULLUP);
   pinMode(BTN_STOP_PIN, INPUT_PULLUP);
   pinMode(BTN_EXPR_PIN, INPUT_PULLUP);
+  pinMode(BTN_SETUP_PIN, INPUT_PULLUP);
+  // POT_PIN does not need pinMode for analogRead on ESP32
 
   // Truque mágico do Contraste (PWM) no Pino 13
   pinMode(13, OUTPUT);
@@ -298,7 +395,8 @@ void setup() {
   });
   server.on("/icon-192.png", []() {
     server.sendHeader("Cache-Control", "max-age=604800, public");
-    server.send_P(200, "image/png", (const char*)WEB_ICON_PNG, WEB_ICON_PNG_LEN);
+    server.send_P(200, "image/png", (const char *)WEB_ICON_PNG,
+                  WEB_ICON_PNG_LEN);
   });
   server.begin();
 
@@ -330,6 +428,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     // Send initial state to the new client
     sendToClients("ACK:BOOT");
     sendToClients("STATE:IDLE");
+
+    // Send current settings to the new client
+    String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                    String(shortBreakDuration / 60) + ":" +
+                    String(longBreakDuration / 60);
+    webSocket.broadcastTXT(cfgMsg);
+
     sendTimerState();
   } break;
   case WStype_TEXT: {
@@ -348,6 +453,11 @@ void loop() {
   webSocket.loop();
   server.handleClient();
   checkButtons();
+
+  if (currentSetupState != SETUP_OFF) {
+    checkSetupMenu();
+    return; // Block UI/Timer updates while in setup menu
+  }
 
   bool currentConnectionState = (connectedClients > 0);
   if (currentConnectionState != lastConnectionState) {
@@ -470,10 +580,34 @@ void processCommand(String cmd) {
     else if (expr == "DIZZY")
       setExpression(EXPR_DIZZY);
     sendToClients("ACK:" + cmd);
+  } else if (cmd.startsWith("CFG:POMO:")) {
+    // Parse configs from Web UI: CFG:POMO:25:5:15
+    String values = cmd.substring(9);
+    int firstColon = values.indexOf(':');
+    int secondColon = values.indexOf(':', firstColon + 1);
+
+    if (firstColon != -1 && secondColon != -1) {
+      focusDuration = values.substring(0, firstColon).toInt() * 60;
+      shortBreakDuration =
+          values.substring(firstColon + 1, secondColon).toInt() * 60;
+      longBreakDuration = values.substring(secondColon + 1).toInt() * 60;
+
+      preferences.putUInt("focus", focusDuration / 60);
+      preferences.putUInt("sbreak", shortBreakDuration / 60);
+      preferences.putUInt("lbreak", longBreakDuration / 60);
+
+      Serial.println("Configuracoes sincronizadas pela Web!");
+
+      // Echo back to all clients so other open tabs sync too
+      String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                      String(shortBreakDuration / 60) + ":" +
+                      String(longBreakDuration / 60);
+      webSocket.broadcastTXT(cfgMsg);
+    }
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
     if (action.startsWith("FOCUS")) {
-      int duration = FOCUS_DURATION;
+      int duration = focusDuration;
       int colonIdx = action.indexOf(':');
       if (colonIdx != -1) {
         duration = action.substring(colonIdx + 1).toInt() * 60;
@@ -501,8 +635,17 @@ void processCommand(String cmd) {
       timerSecondsRemaining = 0;
       setExpression(EXPR_IDLE);
       drawStatusLine();
-    } else if (action.startsWith("BREAK") || action.startsWith("LBREAK")) {
-      int duration = BREAK_DURATION;
+    } else if (action.startsWith("BREAK")) {
+      int duration = shortBreakDuration;
+      int colonIdx = action.indexOf(':');
+      if (colonIdx != -1) {
+        duration = action.substring(colonIdx + 1).toInt() * 60;
+      }
+      startTimer(TIMER_BREAK, duration);
+      setExpression(EXPR_HAPPY);
+      exprTimeout = 0;
+    } else if (action.startsWith("LBREAK")) {
+      int duration = longBreakDuration;
       int colonIdx = action.indexOf(':');
       if (colonIdx != -1) {
         duration = action.substring(colonIdx + 1).toInt() * 60;

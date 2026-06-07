@@ -14,8 +14,11 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
   - Suporta até 10 alarmes diferentes.
   - Permite configurar hora, minuto, título/nome personalizado e ligar/desligar individualmente pela interface web.
 - **Botões Físicos (Hardware):**
-  - Integração de 3 push buttons (GPIO 25, 26 e 27) com *debounce non-blocking* para controle direto.
+  - Integração de 4 push buttons (GPIO 25, 26, 27 e 32) com *debounce non-blocking* para controle direto.
   - Permite iniciar/pausar e parar o Pomodoro, além de ciclar manualmente pelas expressões, tudo sem depender da interface Web.
+- **Configuração Local e Memória Não-Volátil (NVRAM):**
+  - Integração com Potenciômetro Linear 10KΩ (GPIO 34) para ajuste fino do tempo de Foco, Pausa Curta e Pausa Longa direto na tela do LCD.
+  - Salva automaticamente as durações escolhidas na memória flash interna usando `<Preferences.h>`.
 - **Conectividade smart:**
   - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
@@ -32,7 +35,8 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 **Componentes:**
 - 1x Placa de desenvolvimento ESP32 (NodeMCU-32S, ESP32-WROOM, etc.)
 - 1x Display LCD 1602A (16x2 com backlight)
-- *Opcional:* Potenciômetro para ajuste de contraste manual (estamos usando PWM via código no GPIO 13 no lugar do potenciômetro para ajuste via software).
+- 1x Potenciômetro Linear de 10KΩ (para ajustar os tempos no modo Configuração)
+- *Opcional:* Potenciômetro extra para ajuste de contraste manual (estamos usando PWM via código no GPIO 13 no lugar do potenciômetro para ajuste via software).
 
 **⚠️ IMPORTANTE (nível lógico):** 
 O ESP32 trabalha com 3.3V, mas a tela LCD opera em 5V. Como *não* estamos usando um conversor de nível lógico, é **CRÍTICO** aterrar o pino R/W da tela para garantir que o LCD nunca envie 5V de volta para os pinos do ESP32 (funcionamento write-only).
@@ -62,6 +66,14 @@ A configuração dos botões não exige resistores externos. Basta conectar um t
 | Botão 1 | GPIO 25 | Iniciar / Pausar Pomodoro |
 | Botão 2 | GPIO 26 | Parar Pomodoro / Limpar Expressão |
 | Botão 3 | GPIO 27 | Ciclar entre todas as 10 expressões |
+| Botão 4 | GPIO 32 | Entrar no Modo de Configuração / Salvar |
+
+**Ligação do Potenciômetro (Ajuste de Tempo):**
+| Componente (Pernas) | Ligação no ESP32 | Função |
+|---|---|---|
+| Perna 1 (Esquerda) | GND | Terra |
+| Perna 2 (Meio) | GPIO 34 (ADC1) | Leitura Analógica |
+| Perna 3 (Direita) | 3.3V | Alimentação (⚠️ *NUNCA* use 5V no ADC do ESP32) |
 
 ---
 
