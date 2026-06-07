@@ -66,31 +66,33 @@ Abra o Serial Monitor do Arduino IDE (9600 baud) e digite:
 EXP:HAPPY
 TMR:START
 MSG:Hello World
-Fiação Confirmada
+Fiação Confirmada (ESP32)
 
-Arduino Nano     LCD 1602A
+ESP32            LCD 1602A / Botões
 ────────────     ─────────
-Pin 12       →   RS
-Pin 11       →   Enable
-Pin 5        →   D4
-Pin 4        →   D5
-Pin 3        →   D6
-Pin 2        →   D7
-GND          →   R/W
-GND          →   VSS (Pin 1)
-5V           →   VDD (Pin 2)
-Pot 10kΩ     →   V0  (Pin 3) ← CONTRASTE
-5V (via 220Ω)→   LED+ (Pin 15) ← BACKLIGHT
-GND          →   LED- (Pin 16)
+GPIO 19      →   RS
+GPIO 23      →   Enable
+GPIO 18      →   D4
+GPIO 17      →   D5
+GPIO 16      →   D6
+GPIO 15      →   D7
+GND          →   R/W e VSS (Pin 1)
+VIN (5V)     →   VDD (Pin 2) e A (Pin 15, via 220Ω)
+GPIO 13      →   V0  (Pin 3) ← CONTRASTE (PWM)
+GPIO 25      →   Botão 1 (Play/Pause Pomodoro) ← INPUT_PULLUP
+GPIO 26      →   Botão 2 (Stop Pomodoro) ← INPUT_PULLUP
+GPIO 27      →   Botão 3 (Ciclar Expressões) ← INPUT_PULLUP
+
 Verificação
 Teste	Resultado
-Compilação sketch	⚠️ Arduino CLI com erro de permissão do sistema (não relacionado ao código). Compilar via Arduino IDE.
+Compilação sketch	⚠️ Compilar via Arduino IDE.
 Estrutura de arquivos	✅ Todos os 4 arquivos criados corretamente
 Protocolo serial	✅ Comandos e respostas implementados no firmware e no JS
 Web Serial API	✅ Handlers configurados corretamente (before connect)
 MSG case preservation	✅ Mensagens preservam maiúsculas/minúsculas originais
+
 Próximos Passos Opcionais
 🔊 Buzzer — Adicionar alarme sonoro quando o timer terminar
 ✅ 🎨 Mais expressões — Love (corações), Surprised, etc.
 ✅ 📱 PWA — Converter o dashboard web em Progressive Web App
-⌨️ Botões físicos — Adicionar botões na protoboard para controle sem PC
+✅ ⌨️ Botões físicos — Adicionados 3 botões (GPIO 25, 26, 27) com lógica non-blocking debounce.
