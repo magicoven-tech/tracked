@@ -62,12 +62,12 @@ O ESP32 trabalha com 3.3V, mas a tela LCD opera em 5V. Como *não* estamos usand
 **Ligação dos Botões Físicos (`INPUT_PULLUP`):**
 A configuração dos botões não exige resistores externos. Basta conectar um terminal do botão no **GND** e o outro terminal no pino indicado:
 
-| Componente | Ligação no ESP32 | Ação no Sistema |
-|---|---|---|
-| Botão 1 | GPIO 27 | Ciclar entre todas as 10 expressões |
-| Botão 2 | GPIO 26 | Iniciar / Pausar Pomodoro |
-| Botão 3 | GPIO 25 | Parar Pomodoro / Limpar Mensagem ou Expressão |
-| Botão 4 | GPIO 32 | Menu de Configurações Universal (Pomodoro & Alarmes) |
+| Componente | Ligação no ESP32 | Ação em Modo Normal | Ação em Modo Configuração (Setup) |
+|---|---|---|---|
+| Botão 1 | GPIO 27 | Ciclar entre todas as 10 expressões | Cancelar / Sair das configurações sem salvar |
+| Botão 2 | GPIO 26 | Iniciar / Pausar Pomodoro | Voltar para a configuração/etapa anterior |
+| Botão 3 | GPIO 25 | Parar Pomodoro / Limpar Mensagem ou Expressão | Avançar para a próxima configuração/etapa |
+| Botão 4 | GPIO 32 | Menu de Configurações Universal (Pomodoro & Alarmes) | Confirmar seleção / Avançar (Salvar na última etapa) |
 
 **Ligação do Potenciômetro (Ajuste de Tempo):**
 | Componente (Pernas) | Ligação no ESP32 | Função |

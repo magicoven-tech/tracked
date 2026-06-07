@@ -118,6 +118,11 @@ int setupAlarmHour = 0;
 int setupAlarmMinute = 0;
 bool setupAlarmEnabled = false;
 
+// Variáveis para configuração de pomodoro via potenciômetro
+unsigned long setupFocusDuration = 0;
+unsigned long setupShortBreakDuration = 0;
+unsigned long setupLongBreakDuration = 0;
+
 void saveAlarm(int id) {
   if (id >= 0 && id < MAX_ALARMS) {
     String keyEn = "alm_en_" + String(id);
@@ -239,7 +244,7 @@ void checkSetupMenu() {
     }
     case SETUP_POMO_FOCUS: {
       unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 60), 1, 60);
-      focusDuration = minutes * 60;
+      setupFocusDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Foco   ");
       lcd.setCursor(0, 1);
@@ -249,7 +254,7 @@ void checkSetupMenu() {
     }
     case SETUP_POMO_SHORT_BREAK: {
       unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 30), 1, 30);
-      shortBreakDuration = minutes * 60;
+      setupShortBreakDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Pausa C");
       lcd.setCursor(0, 1);
@@ -259,7 +264,7 @@ void checkSetupMenu() {
     }
     case SETUP_POMO_LONG_BREAK: {
       unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 45), 1, 45);
-      longBreakDuration = minutes * 60;
+      setupLongBreakDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Pausa L");
       lcd.setCursor(0, 1);
@@ -318,104 +323,192 @@ void checkSetupMenu() {
   }
 }
 
+void showSavedMessage() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("     Salvo!     ");
+  delay(1000);
+  lcd.clear();
+  lastDrawnExpr = (Expression)255;
+  lastDrawnTimerState = (TimerState)255;
+}
+
+void handleSetupCancel() {
+  currentSetupState = SETUP_OFF;
+  lcd.clear();
+  lastDrawnExpr = (Expression)255;
+  lastDrawnTimerState = (TimerState)255;
+  Serial.println("Configuracao cancelada sem salvar.");
+}
+
+void handleSetupBack() {
+  switch (currentSetupState) {
+  case SETUP_POMO_FOCUS:
+    currentSetupState = SETUP_SELECT_MENU;
+    break;
+  case SETUP_POMO_SHORT_BREAK:
+    currentSetupState = SETUP_POMO_FOCUS;
+    break;
+  case SETUP_POMO_LONG_BREAK:
+    currentSetupState = SETUP_POMO_SHORT_BREAK;
+    break;
+  case SETUP_ALARM_SELECT:
+    currentSetupState = SETUP_SELECT_MENU;
+    break;
+  case SETUP_ALARM_HOUR:
+    currentSetupState = SETUP_ALARM_SELECT;
+    break;
+  case SETUP_ALARM_MINUTE:
+    currentSetupState = SETUP_ALARM_HOUR;
+    break;
+  case SETUP_ALARM_STATE:
+    currentSetupState = SETUP_ALARM_MINUTE;
+    break;
+  default:
+    break;
+  }
+  lcd.clear();
+}
+
+void handleSetupAdvance(bool isButton3) {
+  int potValue = analogRead(POT_PIN);
+
+  if (currentSetupState == SETUP_SELECT_MENU) {
+    if (potValue < 2048) {
+      setupFocusDuration = focusDuration;
+      setupShortBreakDuration = shortBreakDuration;
+      setupLongBreakDuration = longBreakDuration;
+      currentSetupState = SETUP_POMO_FOCUS;
+    } else {
+      currentSetupState = SETUP_ALARM_SELECT;
+    }
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_FOCUS) {
+    setupFocusDuration = constrain(map(potValue, 0, 4095, 1, 60), 1, 60) * 60;
+    currentSetupState = SETUP_POMO_SHORT_BREAK;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_SHORT_BREAK) {
+    setupShortBreakDuration =
+        constrain(map(potValue, 0, 4095, 1, 30), 1, 30) * 60;
+    currentSetupState = SETUP_POMO_LONG_BREAK;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_LONG_BREAK) {
+    if (isButton3) {
+      // Button 3 (Next) does nothing on the last step because there's no next
+      // config
+      return;
+    }
+    setupLongBreakDuration =
+        constrain(map(potValue, 0, 4095, 1, 45), 1, 45) * 60;
+
+    // Save to flash
+    focusDuration = setupFocusDuration;
+    shortBreakDuration = setupShortBreakDuration;
+    longBreakDuration = setupLongBreakDuration;
+
+    preferences.putUInt("focus", focusDuration / 60);
+    preferences.putUInt("sbreak", shortBreakDuration / 60);
+    preferences.putUInt("lbreak", longBreakDuration / 60);
+    Serial.println("Configuracoes de Pomodoro salvas na Flash!");
+
+    // Broadcast new settings to all connected Web UIs
+    String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                    String(shortBreakDuration / 60) + ":" +
+                    String(longBreakDuration / 60);
+    webSocket.broadcastTXT(cfgMsg);
+
+    currentSetupState = SETUP_OFF;
+    showSavedMessage();
+  } else if (currentSetupState == SETUP_ALARM_SELECT) {
+    setupAlarmId = constrain(map(potValue, 0, 4095, 1, 10), 1, 10) - 1;
+    // Initialize temp editing variables from current alarm config
+    setupAlarmHour = alarms[setupAlarmId].hour;
+    setupAlarmMinute = alarms[setupAlarmId].minute;
+    setupAlarmEnabled = alarms[setupAlarmId].enabled;
+
+    currentSetupState = SETUP_ALARM_HOUR;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_HOUR) {
+    setupAlarmHour = constrain(map(potValue, 0, 4095, 0, 23), 0, 23);
+    currentSetupState = SETUP_ALARM_MINUTE;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_MINUTE) {
+    setupAlarmMinute = constrain(map(potValue, 0, 4095, 0, 59), 0, 59);
+    currentSetupState = SETUP_ALARM_STATE;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_STATE) {
+    if (isButton3) {
+      // Button 3 (Next) does nothing on the last step because there's no next
+      // config
+      return;
+    }
+    setupAlarmEnabled = (potValue >= 2048);
+
+    // Apply changes
+    alarms[setupAlarmId].hour = setupAlarmHour;
+    alarms[setupAlarmId].minute = setupAlarmMinute;
+    alarms[setupAlarmId].enabled = setupAlarmEnabled;
+    alarms[setupAlarmId].triggeredToday = false;
+
+    // Save and Sync
+    saveAlarm(setupAlarmId);
+    sendAlarmConfig(setupAlarmId);
+
+    currentSetupState = SETUP_OFF;
+    showSavedMessage();
+  }
+}
+
 void checkButtons() {
   unsigned long now = millis();
 
+  // Intercept button functions if setup mode is active
+  if (currentSetupState != SETUP_OFF) {
+    // Button 4 (GPIO 32 / BTN_SETUP) - Advance/Confirm/Save
+    if (digitalRead(BTN_SETUP_PIN) == LOW) {
+      if (now - lastBtnSetupTime > BTN_COOLDOWN) {
+        lastBtnSetupTime = now;
+        Serial.println("BTN: SETUP pressionado no menu (GPIO 32)");
+        handleSetupAdvance(false);
+      }
+    }
+    // Button 2 (GPIO 26 / BTN_PLAY) - Back
+    if (digitalRead(BTN_PLAY_PIN) == LOW) {
+      if (now - lastBtnPlayTime > BTN_COOLDOWN) {
+        lastBtnPlayTime = now;
+        Serial.println("BTN: BACK pressionado no menu (GPIO 26)");
+        handleSetupBack();
+      }
+    }
+    // Button 3 (GPIO 25 / BTN_STOP) - Next
+    if (digitalRead(BTN_STOP_PIN) == LOW) {
+      if (now - lastBtnStopTime > BTN_COOLDOWN) {
+        lastBtnStopTime = now;
+        Serial.println("BTN: NEXT pressionado no menu (GPIO 25)");
+        handleSetupAdvance(true);
+      }
+    }
+    // Button 1 (GPIO 27 / BTN_EXPR) - Cancel without saving
+    if (digitalRead(BTN_EXPR_PIN) == LOW) {
+      if (now - lastBtnExprTime > BTN_COOLDOWN) {
+        lastBtnExprTime = now;
+        Serial.println("BTN: CANCEL pressionado no menu (GPIO 27)");
+        handleSetupCancel();
+      }
+    }
+    return; // Block other button operations while in setup mode
+  }
+
+  // Normal mode button checks (when setup mode is inactive)
   // Setup (GPIO 32)
   if (digitalRead(BTN_SETUP_PIN) == LOW) {
     if (now - lastBtnSetupTime > BTN_COOLDOWN) {
       lastBtnSetupTime = now;
       Serial.println("BTN: SETUP pressionado (GPIO 32)");
-      int potValue = analogRead(POT_PIN);
-
-      if (currentSetupState == SETUP_OFF) {
-        currentSetupState = SETUP_SELECT_MENU;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_SELECT_MENU) {
-        if (potValue < 2048) {
-          currentSetupState = SETUP_POMO_FOCUS;
-        } else {
-          currentSetupState = SETUP_ALARM_SELECT;
-        }
-        lcd.clear();
-      } else if (currentSetupState == SETUP_POMO_FOCUS) {
-        focusDuration = constrain(map(potValue, 0, 4095, 1, 60), 1, 60) * 60;
-        currentSetupState = SETUP_POMO_SHORT_BREAK;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_POMO_SHORT_BREAK) {
-        shortBreakDuration =
-            constrain(map(potValue, 0, 4095, 1, 30), 1, 30) * 60;
-        currentSetupState = SETUP_POMO_LONG_BREAK;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_POMO_LONG_BREAK) {
-        longBreakDuration =
-            constrain(map(potValue, 0, 4095, 1, 45), 1, 45) * 60;
-        currentSetupState = SETUP_OFF;
-
-        // Save to flash
-        preferences.putUInt("focus", focusDuration / 60);
-        preferences.putUInt("sbreak", shortBreakDuration / 60);
-        preferences.putUInt("lbreak", longBreakDuration / 60);
-        Serial.println("Configuracoes de Pomodoro salvas na Flash!");
-
-        // Broadcast new settings to all connected Web UIs
-        String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
-                        String(shortBreakDuration / 60) + ":" +
-                        String(longBreakDuration / 60);
-        webSocket.broadcastTXT(cfgMsg);
-
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("     Salvo!     ");
-        delay(1000);
-        lcd.clear();
-        lastDrawnExpr = (Expression)255;
-        lastDrawnTimerState = (TimerState)255;
-      } else if (currentSetupState == SETUP_ALARM_SELECT) {
-        setupAlarmId = constrain(map(potValue, 0, 4095, 1, 10), 1, 10) - 1;
-        // Initialize temp editing variables from current alarm config
-        setupAlarmHour = alarms[setupAlarmId].hour;
-        setupAlarmMinute = alarms[setupAlarmId].minute;
-        setupAlarmEnabled = alarms[setupAlarmId].enabled;
-
-        currentSetupState = SETUP_ALARM_HOUR;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_ALARM_HOUR) {
-        setupAlarmHour = constrain(map(potValue, 0, 4095, 0, 23), 0, 23);
-        currentSetupState = SETUP_ALARM_MINUTE;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_ALARM_MINUTE) {
-        setupAlarmMinute = constrain(map(potValue, 0, 4095, 0, 59), 0, 59);
-        currentSetupState = SETUP_ALARM_STATE;
-        lcd.clear();
-      } else if (currentSetupState == SETUP_ALARM_STATE) {
-        setupAlarmEnabled = (potValue >= 2048);
-
-        // Apply changes
-        alarms[setupAlarmId].hour = setupAlarmHour;
-        alarms[setupAlarmId].minute = setupAlarmMinute;
-        alarms[setupAlarmId].enabled = setupAlarmEnabled;
-        alarms[setupAlarmId].triggeredToday = false;
-
-        // Save and Sync
-        saveAlarm(setupAlarmId);
-        sendAlarmConfig(setupAlarmId);
-
-        currentSetupState = SETUP_OFF;
-
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("     Salvo!     ");
-        delay(1000);
-        lcd.clear();
-        lastDrawnExpr = (Expression)255;
-        lastDrawnTimerState = (TimerState)255;
-      }
+      currentSetupState = SETUP_SELECT_MENU;
+      lcd.clear();
     }
   }
-
-  if (currentSetupState != SETUP_OFF)
-    return; // Block other buttons while in setup menu
 
   // Play/Pause (GPIO 26)
   if (digitalRead(BTN_PLAY_PIN) == LOW) {
