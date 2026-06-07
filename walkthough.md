@@ -1,6 +1,6 @@
 # Walkthrough — Menu Universal e Sincronização de Alarmes
 
-Evoluímos o sistema do **Trenzin** com navegação aprimorada no menu de configurações físicas (através dos Botões 1, 2, 3 e 4), isolamos as modificações em variáveis temporárias até o salvamento definitivo, sincronizamos todas as configurações adicionando novos alarmes pela placa, redesenhamos a visualização de alarmes no painel web e configuramos o hardware para rodar de forma 100% **Standalone**.
+Evoluímos o sistema do **Trenzin** com navegação aprimorada no menu de configurações físicas (através dos Botões 1, 2, 3 e 4), isolamos as modificações em variáveis temporárias até o salvamento definitivo, sincronizamos todas as configurações adicionando novos alarmes pela placa, redesenhamos a visualização de alarmes no painel web, configuramos o hardware para rodar de forma 100% **Standalone** e adicionamos avisos de status de conexão.
 
 ---
 
@@ -11,10 +11,11 @@ Agora o Trenzin inicializa, expressa emoções, pisca os olhos e roda os timers 
 - **Remoção de Bloqueios:** Removemos as checagens `connectedClients == 0` que impediam a renderização de `drawFace()` e `drawStatusLine()`.
 - **Limpeza do Loop:** Removemos a tela de "Aguardando app.." que travava o LCD no loop principal enquanto nenhum cliente web estava conectado.
 
-### 2. Mensagem Temporária de Conexão do PWA
-Sempre que um usuário abrir a página do painel web (`http://trenzin.local`) e se conectar ao robô:
-- O sistema intercepta o evento de conexão WebSocket (`WStype_CONNECTED`) e dispara uma mensagem temporária de **3 segundos** no display LCD: `" App Conectado! "`.
-- Após os 3 segundos, a tela volta a renderizar a barra de status ou o Pomodoro ativo sem qualquer interrupção.
+### 2. Mensagens Temporárias de Status do PWA (Conectado / Desconectado)
+Sempre que um usuário estabelecer ou perder a conexão com o painel web, o display LCD exibirá avisos temporários de **3 segundos** para alertar o status de conectividade do dispositivo físico:
+- **Conexão Estabelecida:** Exibe `" App Conectado! "` no evento `WStype_CONNECTED`.
+- **Conexão Perdida:** Exibe `"App Desconectado"` no evento `WStype_DISCONNECTED`.
+Após 3 segundos, a tela apaga o aviso e volta a renderizar a barra de status ou o timer ativo.
 
 ### 3. Instruções de Portal Captivo no LCD (WiFiManager)
 Se o robô ligar e não encontrar nenhuma rede Wi-Fi configurada (ou a conexão falhar):
@@ -50,9 +51,6 @@ Redesenhamos a interface de exibição de alarmes no painel web (`web/style.css`
 ## Validação e Testes Recomendados
 
 1. **Inicialização Autônoma:** Faça o upload do firmware. Assim que o Wi-Fi conectar, os olhinhos devem aparecer piscando de forma autônoma no LCD, sem abrir o navegador.
-2. **Teste do Portal de Configuração:**
-   - Descomente temporariamente `wifiManager.resetSettings();` no código ou configure uma rede inválida para forçar o portal.
-   - Verifique se o LCD muda para `Conecte no WiFi: / Trenzin-Setup` de forma informativa.
-3. **Mensagem de Conexão:** 
-   - Com o robô ligado e piscando, abra a página `http://trenzin.local`.
-   - Assim que o site conectar, confirme que a mensagem `" App Conectado! "` aparece no LCD por 3 segundos antes de retornar à tela normal.
+2. **Teste de Avisos:**
+   - Com o robô ligado, abra a página `http://trenzin.local` e certifique-se de que a mensagem `" App Conectado! "` aparece no LCD.
+   - Feche a página do navegador (ou desconecte a rede) e verifique se a mensagem `"App Desconectado"` surge no LCD por 3 segundos.

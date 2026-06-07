@@ -747,6 +747,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     Serial.printf("[%u] Disconnected!\n", num);
     if (connectedClients > 0)
       connectedClients--;
+    
+    // Show temporary disconnection message on LCD
+    tempMessage = "App Desconectado";
+    tempMsgTimeout = millis() + 3000;
+    lastDrawnMsg = "";
+    drawStatusLine();
     break;
   case WStype_CONNECTED: {
     connectedClients++;
