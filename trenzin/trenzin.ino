@@ -10,8 +10,8 @@
 //   LCD V0  → GPIO 13   (Contrast control via PWM)
 //
 // Buttons (INPUT_PULLUP):
-//   BTN_PLAY_PIN → GPIO 25 (Play/Pause Pomodoro)
-//   BTN_STOP_PIN → GPIO 26 (Stop Pomodoro)
+//   BTN_PLAY_PIN → GPIO 26 (Play/Pause Pomodoro)
+//   BTN_STOP_PIN → GPIO 25 (Stop Pomodoro)
 //   BTN_EXPR_PIN → GPIO 27 (Cycle Expressions)
 //   BTN_SETUP_PIN→ GPIO 32 (Settings Menu)
 //   POT_PIN      → GPIO 34 (Potentiometer for setup, 3.3V max)
@@ -31,8 +31,8 @@ Preferences preferences;
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
-#define BTN_PLAY_PIN 25
-#define BTN_STOP_PIN 26
+#define BTN_PLAY_PIN 26
+#define BTN_STOP_PIN 25
 #define BTN_EXPR_PIN 27
 #define BTN_SETUP_PIN 32
 #define POT_PIN 34
@@ -66,7 +66,17 @@ enum TimerState {
   TIMER_DONE
 };
 
-enum SetupState { SETUP_OFF, SETUP_FOCUS, SETUP_SHORT_BREAK, SETUP_LONG_BREAK };
+enum SetupState {
+  SETUP_OFF,
+  SETUP_SELECT_MENU,
+  SETUP_POMO_FOCUS,
+  SETUP_POMO_SHORT_BREAK,
+  SETUP_POMO_LONG_BREAK,
+  SETUP_ALARM_SELECT,
+  SETUP_ALARM_HOUR,
+  SETUP_ALARM_MINUTE,
+  SETUP_ALARM_STATE
+};
 
 // ── Current State ──────────────────────────────────────────
 Expression currentExpr = EXPR_IDLE;
@@ -101,6 +111,42 @@ struct AlarmConfig {
 };
 AlarmConfig alarms[MAX_ALARMS];
 int currentDay = -1;
+
+// Variáveis para configuração de alarmes via potenciômetro
+int setupAlarmId = 0;
+int setupAlarmHour = 0;
+int setupAlarmMinute = 0;
+bool setupAlarmEnabled = false;
+int existingAlarmIds[MAX_ALARMS];
+int existingAlarmCount = 0;
+
+// Variáveis para configuração de pomodoro via potenciômetro
+unsigned long setupFocusDuration = 0;
+unsigned long setupShortBreakDuration = 0;
+unsigned long setupLongBreakDuration = 0;
+
+void saveAlarm(int id) {
+  if (id >= 0 && id < MAX_ALARMS) {
+    String keyEn = "alm_en_" + String(id);
+    String keyHr = "alm_hr_" + String(id);
+    String keyMn = "alm_mn_" + String(id);
+    preferences.putBool(keyEn.c_str(), alarms[id].enabled);
+    preferences.putInt(keyHr.c_str(), alarms[id].hour);
+    preferences.putInt(keyMn.c_str(), alarms[id].minute);
+  }
+}
+
+void loadAlarms() {
+  for (int i = 0; i < MAX_ALARMS; i++) {
+    String keyEn = "alm_en_" + String(i);
+    String keyHr = "alm_hr_" + String(i);
+    String keyMn = "alm_mn_" + String(i);
+    alarms[i].enabled = preferences.getBool(keyEn.c_str(), false);
+    alarms[i].hour = preferences.getInt(keyHr.c_str(), 0);
+    alarms[i].minute = preferences.getInt(keyMn.c_str(), 0);
+    alarms[i].triggeredToday = false;
+  }
+}
 
 // ── Custom Characters (5×8 pixels) ────────────────────────
 // Slot 0: Left eye open
@@ -157,6 +203,15 @@ void sendToClients(String msg) {
   Serial.println("TX: " + msg);
 }
 
+void sendAlarmConfig(int id) {
+  if (id >= 0 && id < MAX_ALARMS) {
+    String msg = "CFG:ALM:" + String(id) + ":" +
+                 String(alarms[id].enabled ? "1" : "0") + ":" +
+                 String(alarms[id].hour) + ":" + String(alarms[id].minute);
+    sendToClients(msg);
+  }
+}
+
 // ── Physical Buttons ───────────────────────────────────────
 unsigned long lastBtnPlayTime = 0;
 unsigned long lastBtnStopTime = 0;
@@ -164,7 +219,50 @@ unsigned long lastBtnExprTime = 0;
 unsigned long lastBtnSetupTime = 0;
 const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
 
+void updateExistingAlarms() {
+  existingAlarmCount = 0;
+
+  // 1. Coleta todos os alarmes que já existem (configurados)
+  for (int i = 0; i < MAX_ALARMS; i++) {
+    if (alarms[i].enabled || alarms[i].hour != 0 || alarms[i].minute != 0) {
+      existingAlarmIds[existingAlarmCount] = i;
+      existingAlarmCount++;
+    }
+  }
+
+  // 2. Encontra o primeiro alarme não utilizado (se houver espaço) para poder
+  // criá-lo
+  if (existingAlarmCount < MAX_ALARMS) {
+    for (int i = 0; i < MAX_ALARMS; i++) {
+      bool alreadyInList = false;
+      for (int j = 0; j < existingAlarmCount; j++) {
+        if (existingAlarmIds[j] == i) {
+          alreadyInList = true;
+          break;
+        }
+      }
+      if (!alreadyInList) {
+        existingAlarmIds[existingAlarmCount] = i;
+        existingAlarmCount++;
+        break;
+      }
+    }
+  }
+
+  // 3. Ordena os IDs para navegação sequencial no potenciômetro
+  for (int i = 0; i < existingAlarmCount - 1; i++) {
+    for (int j = 0; j < existingAlarmCount - i - 1; j++) {
+      if (existingAlarmIds[j] > existingAlarmIds[j + 1]) {
+        int temp = existingAlarmIds[j];
+        existingAlarmIds[j] = existingAlarmIds[j + 1];
+        existingAlarmIds[j + 1] = temp;
+      }
+    }
+  }
+}
+
 void checkSetupMenu() {
+
   if (currentSetupState == SETUP_OFF)
     return;
 
@@ -175,79 +273,301 @@ void checkSetupMenu() {
   if (now - lastPotRead > 100) {
     lastPotRead = now;
     int potValue = analogRead(POT_PIN);
-    unsigned int minutes = 0;
+    char buf[17];
 
-    if (currentSetupState == SETUP_FOCUS) {
-      minutes = map(potValue, 0, 4095, 1, 60);
-      focusDuration = minutes * 60;
+    switch (currentSetupState) {
+    case SETUP_SELECT_MENU: {
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Menu   ");
+      lcd.setCursor(0, 1);
+      if (potValue < 2048) {
+        lcd.print("> 1. Pomodoro   ");
+      } else {
+        lcd.print("> 2. Alarmes    ");
+      }
+      break;
+    }
+    case SETUP_POMO_FOCUS: {
+      unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 60), 1, 60);
+      setupFocusDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Foco   ");
-    } else if (currentSetupState == SETUP_SHORT_BREAK) {
-      minutes = map(potValue, 0, 4095, 1, 30);
-      shortBreakDuration = minutes * 60;
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
+      lcd.print(buf);
+      break;
+    }
+    case SETUP_POMO_SHORT_BREAK: {
+      unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 30), 1, 30);
+      setupShortBreakDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Pausa C");
-    } else if (currentSetupState == SETUP_LONG_BREAK) {
-      minutes = map(potValue, 0, 4095, 1, 45);
-      longBreakDuration = minutes * 60;
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
+      lcd.print(buf);
+      break;
+    }
+    case SETUP_POMO_LONG_BREAK: {
+      unsigned int minutes = constrain(map(potValue, 0, 4095, 1, 45), 1, 45);
+      setupLongBreakDuration = minutes * 60;
       lcd.setCursor(0, 0);
       lcd.print("[Config] Pausa L");
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
+      lcd.print(buf);
+      break;
     }
+    case SETUP_ALARM_SELECT: {
+      updateExistingAlarms();
+      int mappedIndex =
+          constrain(map(potValue, 0, 4095, 0, existingAlarmCount - 1), 0,
+                    existingAlarmCount - 1);
+      int selectedAlarmId = existingAlarmIds[mappedIndex];
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Alarme ");
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Sel. Alarme: %02d ", selectedAlarmId + 1);
+      lcd.print(buf);
+      break;
+    }
+    case SETUP_ALARM_HOUR: {
+      unsigned int hourVal = constrain(map(potValue, 0, 4095, 0, 23), 0, 23);
+      setupAlarmHour = hourVal;
+      lcd.setCursor(0, 0);
+      snprintf(buf, sizeof(buf), "Alarme %02d: Hora  ", setupAlarmId + 1);
+      lcd.print(buf);
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Hora: %02d         ", hourVal);
+      lcd.print(buf);
+      break;
+    }
+    case SETUP_ALARM_MINUTE: {
+      unsigned int minVal = constrain(map(potValue, 0, 4095, 0, 59), 0, 59);
+      setupAlarmMinute = minVal;
+      lcd.setCursor(0, 0);
+      snprintf(buf, sizeof(buf), "Alarme %02d: Minuto", setupAlarmId + 1);
+      lcd.print(buf);
+      lcd.setCursor(0, 1);
+      snprintf(buf, sizeof(buf), "Minuto: %02d       ", minVal);
+      lcd.print(buf);
+      break;
+    }
+    case SETUP_ALARM_STATE: {
+      bool stateVal = (potValue >= 2048);
+      setupAlarmEnabled = stateVal;
+      lcd.setCursor(0, 0);
+      snprintf(buf, sizeof(buf), "Alarme %02d: Status", setupAlarmId + 1);
+      lcd.print(buf);
+      lcd.setCursor(0, 1);
+      if (stateVal) {
+        lcd.print("Status: LIGADO  ");
+      } else {
+        lcd.print("Status: DESLIGAD");
+      }
+      break;
+    }
+    default:
+      break;
+    }
+  }
+}
 
-    lcd.setCursor(0, 1);
-    char buf[17];
-    snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
-    lcd.print(buf);
+void showSavedMessage() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("     Salvo!     ");
+  delay(1000);
+  lcd.clear();
+  lastDrawnExpr = (Expression)255;
+  lastDrawnTimerState = (TimerState)255;
+}
+
+void handleSetupCancel() {
+  currentSetupState = SETUP_OFF;
+  lcd.clear();
+  lastDrawnExpr = (Expression)255;
+  lastDrawnTimerState = (TimerState)255;
+  Serial.println("Configuracao cancelada sem salvar.");
+}
+
+void handleSetupBack() {
+  switch (currentSetupState) {
+  case SETUP_POMO_FOCUS:
+    currentSetupState = SETUP_SELECT_MENU;
+    break;
+  case SETUP_POMO_SHORT_BREAK:
+    currentSetupState = SETUP_POMO_FOCUS;
+    break;
+  case SETUP_POMO_LONG_BREAK:
+    currentSetupState = SETUP_POMO_SHORT_BREAK;
+    break;
+  case SETUP_ALARM_SELECT:
+    currentSetupState = SETUP_SELECT_MENU;
+    break;
+  case SETUP_ALARM_HOUR:
+    currentSetupState = SETUP_ALARM_SELECT;
+    break;
+  case SETUP_ALARM_MINUTE:
+    currentSetupState = SETUP_ALARM_HOUR;
+    break;
+  case SETUP_ALARM_STATE:
+    currentSetupState = SETUP_ALARM_MINUTE;
+    break;
+  default:
+    break;
+  }
+  lcd.clear();
+}
+
+void handleSetupAdvance(bool isButton3) {
+  int potValue = analogRead(POT_PIN);
+
+  if (currentSetupState == SETUP_SELECT_MENU) {
+    if (potValue < 2048) {
+      setupFocusDuration = focusDuration;
+      setupShortBreakDuration = shortBreakDuration;
+      setupLongBreakDuration = longBreakDuration;
+      currentSetupState = SETUP_POMO_FOCUS;
+    } else {
+      currentSetupState = SETUP_ALARM_SELECT;
+    }
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_FOCUS) {
+    setupFocusDuration = constrain(map(potValue, 0, 4095, 1, 60), 1, 60) * 60;
+    currentSetupState = SETUP_POMO_SHORT_BREAK;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_SHORT_BREAK) {
+    setupShortBreakDuration =
+        constrain(map(potValue, 0, 4095, 1, 30), 1, 30) * 60;
+    currentSetupState = SETUP_POMO_LONG_BREAK;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_POMO_LONG_BREAK) {
+    if (isButton3) {
+      // Button 3 (Next) does nothing on the last step because there's no next
+      // config
+      return;
+    }
+    setupLongBreakDuration =
+        constrain(map(potValue, 0, 4095, 1, 45), 1, 45) * 60;
+
+    // Save to flash
+    focusDuration = setupFocusDuration;
+    shortBreakDuration = setupShortBreakDuration;
+    longBreakDuration = setupLongBreakDuration;
+
+    preferences.putUInt("focus", focusDuration / 60);
+    preferences.putUInt("sbreak", shortBreakDuration / 60);
+    preferences.putUInt("lbreak", longBreakDuration / 60);
+    Serial.println("Configuracoes de Pomodoro salvas na Flash!");
+
+    // Broadcast new settings to all connected Web UIs
+    String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                    String(shortBreakDuration / 60) + ":" +
+                    String(longBreakDuration / 60);
+    webSocket.broadcastTXT(cfgMsg);
+
+    currentSetupState = SETUP_OFF;
+    showSavedMessage();
+  } else if (currentSetupState == SETUP_ALARM_SELECT) {
+    updateExistingAlarms();
+    int mappedIndex =
+        constrain(map(potValue, 0, 4095, 0, existingAlarmCount - 1), 0,
+                  existingAlarmCount - 1);
+    setupAlarmId = existingAlarmIds[mappedIndex];
+    // Initialize temp editing variables from current alarm config
+    setupAlarmHour = alarms[setupAlarmId].hour;
+    setupAlarmMinute = alarms[setupAlarmId].minute;
+    setupAlarmEnabled = alarms[setupAlarmId].enabled;
+
+    currentSetupState = SETUP_ALARM_HOUR;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_HOUR) {
+    setupAlarmHour = constrain(map(potValue, 0, 4095, 0, 23), 0, 23);
+    currentSetupState = SETUP_ALARM_MINUTE;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_MINUTE) {
+    setupAlarmMinute = constrain(map(potValue, 0, 4095, 0, 59), 0, 59);
+    currentSetupState = SETUP_ALARM_STATE;
+    lcd.clear();
+  } else if (currentSetupState == SETUP_ALARM_STATE) {
+    if (isButton3) {
+      // Button 3 (Next) does nothing on the last step because there's no next
+      // config
+      return;
+    }
+    setupAlarmEnabled = (potValue >= 2048);
+
+    // Apply changes
+    alarms[setupAlarmId].hour = setupAlarmHour;
+    alarms[setupAlarmId].minute = setupAlarmMinute;
+    alarms[setupAlarmId].enabled = setupAlarmEnabled;
+    alarms[setupAlarmId].triggeredToday = false;
+
+    // Save and Sync
+    saveAlarm(setupAlarmId);
+    sendAlarmConfig(setupAlarmId);
+
+    currentSetupState = SETUP_OFF;
+    showSavedMessage();
   }
 }
 
 void checkButtons() {
   unsigned long now = millis();
 
+  // Intercept button functions if setup mode is active
+  if (currentSetupState != SETUP_OFF) {
+    // Button 4 (GPIO 32 / BTN_SETUP) - Advance/Confirm/Save
+    if (digitalRead(BTN_SETUP_PIN) == LOW) {
+      if (now - lastBtnSetupTime > BTN_COOLDOWN) {
+        lastBtnSetupTime = now;
+        Serial.println("BTN: SETUP pressionado no menu (GPIO 32)");
+        handleSetupAdvance(false);
+      }
+    }
+    // Button 2 (GPIO 26 / BTN_PLAY) - Back
+    if (digitalRead(BTN_PLAY_PIN) == LOW) {
+      if (now - lastBtnPlayTime > BTN_COOLDOWN) {
+        lastBtnPlayTime = now;
+        Serial.println("BTN: BACK pressionado no menu (GPIO 26)");
+        handleSetupBack();
+      }
+    }
+    // Button 3 (GPIO 25 / BTN_STOP) - Next
+    if (digitalRead(BTN_STOP_PIN) == LOW) {
+      if (now - lastBtnStopTime > BTN_COOLDOWN) {
+        lastBtnStopTime = now;
+        Serial.println("BTN: NEXT pressionado no menu (GPIO 25)");
+        handleSetupAdvance(true);
+      }
+    }
+    // Button 1 (GPIO 27 / BTN_EXPR) - Cancel without saving
+    if (digitalRead(BTN_EXPR_PIN) == LOW) {
+      if (now - lastBtnExprTime > BTN_COOLDOWN) {
+        lastBtnExprTime = now;
+        Serial.println("BTN: CANCEL pressionado no menu (GPIO 27)");
+        handleSetupCancel();
+      }
+    }
+    return; // Block other button operations while in setup mode
+  }
+
+  // Normal mode button checks (when setup mode is inactive)
   // Setup (GPIO 32)
   if (digitalRead(BTN_SETUP_PIN) == LOW) {
     if (now - lastBtnSetupTime > BTN_COOLDOWN) {
       lastBtnSetupTime = now;
       Serial.println("BTN: SETUP pressionado (GPIO 32)");
-      if (currentSetupState == SETUP_OFF) {
-        currentSetupState = SETUP_FOCUS;
-      } else if (currentSetupState == SETUP_FOCUS) {
-        currentSetupState = SETUP_SHORT_BREAK;
-      } else if (currentSetupState == SETUP_SHORT_BREAK) {
-        currentSetupState = SETUP_LONG_BREAK;
-      } else if (currentSetupState == SETUP_LONG_BREAK) {
-        currentSetupState = SETUP_OFF;
-        // Save to flash
-        preferences.putUInt("focus", focusDuration / 60);
-        preferences.putUInt("sbreak", shortBreakDuration / 60);
-        preferences.putUInt("lbreak", longBreakDuration / 60);
-        Serial.println("Configuracoes salvas na Flash!");
-
-        // Broadcast new settings to all connected Web UIs!
-        String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
-                        String(shortBreakDuration / 60) + ":" +
-                        String(longBreakDuration / 60);
-        webSocket.broadcastTXT(cfgMsg);
-
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("     Salvo!     ");
-        delay(1000);
-        lcd.clear();
-        lastDrawnExpr = (Expression)255;
-        lastDrawnTimerState = (TimerState)255;
-      }
+      currentSetupState = SETUP_SELECT_MENU;
+      lcd.clear();
     }
   }
 
-  if (currentSetupState != SETUP_OFF)
-    return; // Block other buttons while in setup
-
-  // Play/Pause (GPIO 25)
+  // Play/Pause (GPIO 26)
   if (digitalRead(BTN_PLAY_PIN) == LOW) {
     if (now - lastBtnPlayTime > BTN_COOLDOWN) {
       lastBtnPlayTime = now;
-      Serial.println("BTN: PLAY/PAUSE pressionado (GPIO 25)");
+      Serial.println("BTN: PLAY/PAUSE pressionado (GPIO 26)");
       if (timerState == TIMER_FOCUS) {
         timerState = TIMER_FOCUS_PAUSED;
       } else if (timerState == TIMER_BREAK) {
@@ -270,11 +590,11 @@ void checkButtons() {
     }
   }
 
-  // Stop (GPIO 26)
+  // Stop (GPIO 25)
   if (digitalRead(BTN_STOP_PIN) == LOW) {
     if (now - lastBtnStopTime > BTN_COOLDOWN) {
       lastBtnStopTime = now;
-      Serial.println("BTN: STOP pressionado (GPIO 26)");
+      Serial.println("BTN: STOP pressionado (GPIO 25)");
       timerState = TIMER_OFF;
       timerSecondsRemaining = 0;
       setExpression(EXPR_IDLE);
@@ -305,6 +625,7 @@ void setup() {
   focusDuration = preferences.getUInt("focus", 25) * 60;
   shortBreakDuration = preferences.getUInt("sbreak", 5) * 60;
   longBreakDuration = preferences.getUInt("lbreak", 15) * 60;
+  loadAlarms();
 
   pinMode(BTN_PLAY_PIN, INPUT_PULLUP);
   pinMode(BTN_STOP_PIN, INPUT_PULLUP);
@@ -434,6 +755,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
                     String(shortBreakDuration / 60) + ":" +
                     String(longBreakDuration / 60);
     webSocket.broadcastTXT(cfgMsg);
+
+    for (int i = 0; i < MAX_ALARMS; i++) {
+      sendAlarmConfig(i);
+    }
 
     sendTimerState();
   } break;
@@ -678,6 +1003,8 @@ void processCommand(String cmd) {
           alarms[id].hour = action.substring(idIdx + 1, nextColon).toInt();
           alarms[id].minute = action.substring(nextColon + 1).toInt();
           alarms[id].triggeredToday = false;
+          saveAlarm(id);
+          sendAlarmConfig(id);
         }
       }
     } else if (verb == "ON" || verb == "OFF" || verb == "DEL") {
@@ -700,6 +1027,8 @@ void processCommand(String cmd) {
           alarms[id].hour = 0;
           alarms[id].minute = 0;
         }
+        saveAlarm(id);
+        sendAlarmConfig(id);
       }
     }
     sendToClients("ACK:" + cmd);
