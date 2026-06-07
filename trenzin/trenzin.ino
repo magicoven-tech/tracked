@@ -222,6 +222,13 @@ void checkButtons() {
         preferences.putUInt("sbreak", shortBreakDuration / 60);
         preferences.putUInt("lbreak", longBreakDuration / 60);
         Serial.println("Configuracoes salvas na Flash!");
+
+        // Broadcast new settings to all connected Web UIs!
+        String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                        String(shortBreakDuration / 60) + ":" +
+                        String(longBreakDuration / 60);
+        webSocket.broadcastTXT(cfgMsg);
+
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("     Salvo!     ");
@@ -421,6 +428,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     // Send initial state to the new client
     sendToClients("ACK:BOOT");
     sendToClients("STATE:IDLE");
+
+    // Send current settings to the new client
+    String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                    String(shortBreakDuration / 60) + ":" +
+                    String(longBreakDuration / 60);
+    webSocket.broadcastTXT(cfgMsg);
+
     sendTimerState();
   } break;
   case WStype_TEXT: {
@@ -566,6 +580,30 @@ void processCommand(String cmd) {
     else if (expr == "DIZZY")
       setExpression(EXPR_DIZZY);
     sendToClients("ACK:" + cmd);
+  } else if (cmd.startsWith("CFG:POMO:")) {
+    // Parse configs from Web UI: CFG:POMO:25:5:15
+    String values = cmd.substring(9);
+    int firstColon = values.indexOf(':');
+    int secondColon = values.indexOf(':', firstColon + 1);
+
+    if (firstColon != -1 && secondColon != -1) {
+      focusDuration = values.substring(0, firstColon).toInt() * 60;
+      shortBreakDuration =
+          values.substring(firstColon + 1, secondColon).toInt() * 60;
+      longBreakDuration = values.substring(secondColon + 1).toInt() * 60;
+
+      preferences.putUInt("focus", focusDuration / 60);
+      preferences.putUInt("sbreak", shortBreakDuration / 60);
+      preferences.putUInt("lbreak", longBreakDuration / 60);
+
+      Serial.println("Configuracoes sincronizadas pela Web!");
+
+      // Echo back to all clients so other open tabs sync too
+      String cfgMsg = "CFG:POMO:" + String(focusDuration / 60) + ":" +
+                      String(shortBreakDuration / 60) + ":" +
+                      String(longBreakDuration / 60);
+      webSocket.broadcastTXT(cfgMsg);
+    }
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
     if (action.startsWith("FOCUS")) {

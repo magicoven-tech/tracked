@@ -95,6 +95,7 @@ Protocolo serial	✅ Comandos e respostas implementados no firmware e no JS
 Web Serial API	✅ Handlers configurados corretamente (before connect)
 MSG case preservation	✅ Mensagens preservam maiúsculas/minúsculas originais
 Memória Não-Volátil	✅ Preferências salvas na flash do ESP32 e recuperadas no boot
+Sincronização Bidirecional	✅ Tempos do Pomodoro via comando CFG:POMO sincronizados Web <-> ESP32
 
 Próximos Passos Opcionais
 🔊 Buzzer — Adicionar alarme sonoro quando o timer terminar
