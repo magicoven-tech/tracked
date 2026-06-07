@@ -8,7 +8,12 @@
 //   LCD D6  → GPIO 16   LCD D7     → GPIO 15
 //   LCD R/W → GND       (CRITICAL! Must be GND to protect ESP32)
 //   LCD VDD → 5V (VIN)  LCD VSS    → GND
-//   Contrast pot (10kΩ) on V0 or GND directly
+//   LCD V0  → GPIO 13   (Contrast control via PWM)
+//
+// Buttons (INPUT_PULLUP):
+//   BTN_PLAY_PIN → GPIO 25 (Play/Pause Pomodoro)
+//   BTN_STOP_PIN → GPIO 26 (Stop Pomodoro)
+//   BTN_EXPR_PIN → GPIO 27 (Cycle Expressions)
 // ============================================================
 
 #include "web_assets.h"
@@ -22,6 +27,9 @@
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
+#define BTN_PLAY_PIN 25
+#define BTN_STOP_PIN 26
+#define BTN_EXPR_PIN 27
 
 // ── Wi-Fi Configuration ────────────────────────────────────
 // As credenciais agora são gerenciadas pelo WiFiManager
@@ -138,9 +146,74 @@ void sendToClients(String msg) {
   Serial.println("TX: " + msg);
 }
 
+// ── Physical Buttons ───────────────────────────────────────
+unsigned long lastBtnPlayTime = 0;
+unsigned long lastBtnStopTime = 0;
+unsigned long lastBtnExprTime = 0;
+const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
+
+void checkButtons() {
+  unsigned long now = millis();
+  
+  // Play/Pause (GPIO 25)
+  if (digitalRead(BTN_PLAY_PIN) == LOW) {
+    if (now - lastBtnPlayTime > BTN_COOLDOWN) {
+      lastBtnPlayTime = now;
+      Serial.println("BTN: PLAY/PAUSE pressionado (GPIO 25)");
+      if (timerState == TIMER_FOCUS) {
+        timerState = TIMER_FOCUS_PAUSED;
+      } else if (timerState == TIMER_BREAK) {
+        timerState = TIMER_BREAK_PAUSED;
+      } else if (timerState == TIMER_FOCUS_PAUSED) {
+        timerState = TIMER_FOCUS;
+        lastTimerTick = now;
+        setExpression(EXPR_FOCUS);
+      } else if (timerState == TIMER_BREAK_PAUSED) {
+        timerState = TIMER_BREAK;
+        lastTimerTick = now;
+      } else {
+        timerState = TIMER_FOCUS;
+        timerSecondsRemaining = FOCUS_DURATION;
+        lastTimerTick = now;
+        setExpression(EXPR_FOCUS);
+      }
+      sendTimerState();
+      drawStatusLine();
+    }
+  }
+
+  // Stop (GPIO 26)
+  if (digitalRead(BTN_STOP_PIN) == LOW) {
+    if (now - lastBtnStopTime > BTN_COOLDOWN) {
+      lastBtnStopTime = now;
+      Serial.println("BTN: STOP pressionado (GPIO 26)");
+      timerState = TIMER_OFF;
+      timerSecondsRemaining = 0;
+      setExpression(EXPR_IDLE);
+      sendTimerState();
+      drawStatusLine();
+    }
+  }
+
+  // Expression Cycle (GPIO 27)
+  if (digitalRead(BTN_EXPR_PIN) == LOW) {
+    if (now - lastBtnExprTime > BTN_COOLDOWN) {
+      lastBtnExprTime = now;
+      Serial.println("BTN: EXPR pressionado (GPIO 27)");
+      int nextExpr = (int)currentExpr + 1;
+      if (nextExpr > EXPR_DIZZY) nextExpr = EXPR_IDLE;
+      setExpression((Expression)nextExpr);
+    }
+  }
+}
+
 // ── Setup ──────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
+
+  pinMode(BTN_PLAY_PIN, INPUT_PULLUP);
+  pinMode(BTN_STOP_PIN, INPUT_PULLUP);
+  pinMode(BTN_EXPR_PIN, INPUT_PULLUP);
 
   // Truque mágico do Contraste (PWM) no Pino 13
   pinMode(13, OUTPUT);
@@ -274,6 +347,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
 void loop() {
   webSocket.loop();
   server.handleClient();
+  checkButtons();
 
   bool currentConnectionState = (connectedClients > 0);
   if (currentConnectionState != lastConnectionState) {

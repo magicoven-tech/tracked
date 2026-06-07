@@ -13,6 +13,9 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 - **Sistema de múltiplos alarmes:**
   - Suporta até 10 alarmes diferentes.
   - Permite configurar hora, minuto, título/nome personalizado e ligar/desligar individualmente pela interface web.
+- **Botões Físicos (Hardware):**
+  - Integração de 3 push buttons (GPIO 25, 26 e 27) com *debounce non-blocking* para controle direto.
+  - Permite iniciar/pausar e parar o Pomodoro, além de ciclar manualmente pelas expressões, tudo sem depender da interface Web.
 - **Conectividade smart:**
   - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
@@ -50,6 +53,15 @@ O ESP32 trabalha com 3.3V, mas a tela LCD opera em 5V. Como *não* estamos usand
 | 14 | D7 | GPIO 15 | Data pin |
 | 15 | A | 5V / VIN | Anodo do backlight (pode usar um resistor de 220Ω) |
 | 16 | K | GND | Cátodo do backlight |
+
+**Ligação dos Botões Físicos (`INPUT_PULLUP`):**
+A configuração dos botões não exige resistores externos. Basta conectar um terminal do botão no **GND** e o outro terminal no pino indicado:
+
+| Componente | Ligação no ESP32 | Ação no Sistema |
+|---|---|---|
+| Botão 1 | GPIO 25 | Iniciar / Pausar Pomodoro |
+| Botão 2 | GPIO 26 | Parar Pomodoro / Limpar Expressão |
+| Botão 3 | GPIO 27 | Ciclar entre todas as 10 expressões |
 
 ---
 
