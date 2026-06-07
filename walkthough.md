@@ -82,6 +82,10 @@ GPIO 13      →   V0  (Pin 3) ← CONTRASTE (PWM)
 GPIO 25      →   Botão 1 (Play/Pause Pomodoro) ← INPUT_PULLUP
 GPIO 26      →   Botão 2 (Stop Pomodoro) ← INPUT_PULLUP
 GPIO 27      →   Botão 3 (Ciclar Expressões) ← INPUT_PULLUP
+GPIO 32      →   Botão 4 (Menu de Configurações) ← INPUT_PULLUP
+GPIO 34      →   Potenciômetro 10KΩ (Pino do meio) ← ADC1
+3.3V do ESP32→   Potenciômetro 10KΩ (Pino lateral direito)
+GND          →   Potenciômetro 10KΩ (Pino lateral esquerdo)
 
 Verificação
 Teste	Resultado
@@ -90,9 +94,11 @@ Estrutura de arquivos	✅ Todos os 4 arquivos criados corretamente
 Protocolo serial	✅ Comandos e respostas implementados no firmware e no JS
 Web Serial API	✅ Handlers configurados corretamente (before connect)
 MSG case preservation	✅ Mensagens preservam maiúsculas/minúsculas originais
+Memória Não-Volátil	✅ Preferências salvas na flash do ESP32 e recuperadas no boot
 
 Próximos Passos Opcionais
 🔊 Buzzer — Adicionar alarme sonoro quando o timer terminar
 ✅ 🎨 Mais expressões — Love (corações), Surprised, etc.
 ✅ 📱 PWA — Converter o dashboard web em Progressive Web App
 ✅ ⌨️ Botões físicos — Adicionados 3 botões (GPIO 25, 26, 27) com lógica non-blocking debounce.
+✅ ⚙️ Modo de Configuração Local — Potenciômetro e botão adicionados para ajustar tempo sem Wi-Fi.

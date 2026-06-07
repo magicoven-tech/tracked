@@ -14,6 +14,8 @@
 //   BTN_PLAY_PIN → GPIO 25 (Play/Pause Pomodoro)
 //   BTN_STOP_PIN → GPIO 26 (Stop Pomodoro)
 //   BTN_EXPR_PIN → GPIO 27 (Cycle Expressions)
+//   BTN_SETUP_PIN→ GPIO 32 (Settings Menu)
+//   POT_PIN      → GPIO 34 (Potentiometer for setup, 3.3V max)
 // ============================================================
 
 #include "web_assets.h"
@@ -24,12 +26,17 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <time.h>
+#include <Preferences.h>
+
+Preferences preferences;
 
 // ── Pin Configuration ──────────────────────────────────────
 LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 #define BTN_PLAY_PIN 25
 #define BTN_STOP_PIN 26
 #define BTN_EXPR_PIN 27
+#define BTN_SETUP_PIN 32
+#define POT_PIN 34
 
 // ── Wi-Fi Configuration ────────────────────────────────────
 // As credenciais agora são gerenciadas pelo WiFiManager
@@ -60,6 +67,13 @@ enum TimerState {
   TIMER_DONE
 };
 
+enum SetupState {
+  SETUP_OFF,
+  SETUP_FOCUS,
+  SETUP_SHORT_BREAK,
+  SETUP_LONG_BREAK
+};
+
 // ── Current State ──────────────────────────────────────────
 Expression currentExpr = EXPR_IDLE;
 TimerState timerState = TIMER_OFF;
@@ -72,9 +86,12 @@ bool isBlinking = false;
 unsigned long blinkStart = 0;
 const unsigned long BLINK_DURATION = 180; // ms
 
-// Timer durations
-const unsigned long FOCUS_DURATION = 25UL * 60; // 25 min in seconds
-const unsigned long BREAK_DURATION = 5UL * 60;  // 5 min in seconds
+// Timer durations (can be modified via Potentiometer)
+unsigned long focusDuration = 25UL * 60; // default 25 min
+unsigned long shortBreakDuration = 5UL * 60; // default 5 min
+unsigned long longBreakDuration = 15UL * 60; // default 15 min
+
+SetupState currentSetupState = SETUP_OFF;
 
 // ── Temporary Message ──────────────────────────────────────
 String tempMessage = "";
@@ -150,10 +167,78 @@ void sendToClients(String msg) {
 unsigned long lastBtnPlayTime = 0;
 unsigned long lastBtnStopTime = 0;
 unsigned long lastBtnExprTime = 0;
+unsigned long lastBtnSetupTime = 0;
 const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
+
+void checkSetupMenu() {
+  if (currentSetupState == SETUP_OFF) return;
+
+  unsigned long now = millis();
+  static unsigned long lastPotRead = 0;
+  
+  // Read potentiometer every 100ms for smooth UI updates
+  if (now - lastPotRead > 100) {
+    lastPotRead = now;
+    int potValue = analogRead(POT_PIN);
+    unsigned int minutes = 0;
+    
+    if (currentSetupState == SETUP_FOCUS) {
+      minutes = map(potValue, 0, 4095, 1, 60);
+      focusDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Foco   ");
+    } else if (currentSetupState == SETUP_SHORT_BREAK) {
+      minutes = map(potValue, 0, 4095, 1, 30);
+      shortBreakDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Pausa C");
+    } else if (currentSetupState == SETUP_LONG_BREAK) {
+      minutes = map(potValue, 0, 4095, 1, 45);
+      longBreakDuration = minutes * 60;
+      lcd.setCursor(0, 0);
+      lcd.print("[Config] Pausa L");
+    }
+
+    lcd.setCursor(0, 1);
+    char buf[17];
+    snprintf(buf, sizeof(buf), "Tempo: %02d min    ", minutes);
+    lcd.print(buf);
+  }
+}
 
 void checkButtons() {
   unsigned long now = millis();
+  
+  // Setup (GPIO 32)
+  if (digitalRead(BTN_SETUP_PIN) == LOW) {
+    if (now - lastBtnSetupTime > BTN_COOLDOWN) {
+      lastBtnSetupTime = now;
+      Serial.println("BTN: SETUP pressionado (GPIO 32)");
+      if (currentSetupState == SETUP_OFF) {
+        currentSetupState = SETUP_FOCUS;
+      } else if (currentSetupState == SETUP_FOCUS) {
+        currentSetupState = SETUP_SHORT_BREAK;
+      } else if (currentSetupState == SETUP_SHORT_BREAK) {
+        currentSetupState = SETUP_LONG_BREAK;
+      } else if (currentSetupState == SETUP_LONG_BREAK) {
+        currentSetupState = SETUP_OFF;
+        // Save to flash
+        preferences.putUInt("focus", focusDuration / 60);
+        preferences.putUInt("sbreak", shortBreakDuration / 60);
+        preferences.putUInt("lbreak", longBreakDuration / 60);
+        Serial.println("Configuracoes salvas na Flash!");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("     Salvo!     ");
+        delay(1000);
+        lcd.clear();
+        lastDrawnExpr = (Expression)255;
+        lastDrawnTimerState = (TimerState)255;
+      }
+    }
+  }
+
+  if (currentSetupState != SETUP_OFF) return; // Block other buttons while in setup
   
   // Play/Pause (GPIO 25)
   if (digitalRead(BTN_PLAY_PIN) == LOW) {
@@ -171,10 +256,10 @@ void checkButtons() {
       } else if (timerState == TIMER_BREAK_PAUSED) {
         timerState = TIMER_BREAK;
         lastTimerTick = now;
-      } else {
-        timerState = TIMER_FOCUS;
-        timerSecondsRemaining = FOCUS_DURATION;
-        lastTimerTick = now;
+        } else {
+          timerState = TIMER_FOCUS;
+          timerSecondsRemaining = focusDuration;
+          lastTimerTick = now;
         setExpression(EXPR_FOCUS);
       }
       sendTimerState();
@@ -211,9 +296,17 @@ void checkButtons() {
 void setup() {
   Serial.begin(115200);
 
+  // Carregar preferências salvas
+  preferences.begin("trenzin", false);
+  focusDuration = preferences.getUInt("focus", 25) * 60;
+  shortBreakDuration = preferences.getUInt("sbreak", 5) * 60;
+  longBreakDuration = preferences.getUInt("lbreak", 15) * 60;
+
   pinMode(BTN_PLAY_PIN, INPUT_PULLUP);
   pinMode(BTN_STOP_PIN, INPUT_PULLUP);
   pinMode(BTN_EXPR_PIN, INPUT_PULLUP);
+  pinMode(BTN_SETUP_PIN, INPUT_PULLUP);
+  // POT_PIN does not need pinMode for analogRead on ESP32
 
   // Truque mágico do Contraste (PWM) no Pino 13
   pinMode(13, OUTPUT);
@@ -349,6 +442,11 @@ void loop() {
   server.handleClient();
   checkButtons();
 
+  if (currentSetupState != SETUP_OFF) {
+    checkSetupMenu();
+    return; // Block UI/Timer updates while in setup menu
+  }
+
   bool currentConnectionState = (connectedClients > 0);
   if (currentConnectionState != lastConnectionState) {
     lastConnectionState = currentConnectionState;
@@ -473,7 +571,7 @@ void processCommand(String cmd) {
   } else if (cmd.startsWith("TMR:")) {
     String action = cmd.substring(4);
     if (action.startsWith("FOCUS")) {
-      int duration = FOCUS_DURATION;
+      int duration = focusDuration;
       int colonIdx = action.indexOf(':');
       if (colonIdx != -1) {
         duration = action.substring(colonIdx + 1).toInt() * 60;
@@ -501,8 +599,17 @@ void processCommand(String cmd) {
       timerSecondsRemaining = 0;
       setExpression(EXPR_IDLE);
       drawStatusLine();
-    } else if (action.startsWith("BREAK") || action.startsWith("LBREAK")) {
-      int duration = BREAK_DURATION;
+    } else if (action.startsWith("BREAK")) {
+      int duration = shortBreakDuration;
+      int colonIdx = action.indexOf(':');
+      if (colonIdx != -1) {
+        duration = action.substring(colonIdx + 1).toInt() * 60;
+      }
+      startTimer(TIMER_BREAK, duration);
+      setExpression(EXPR_HAPPY);
+      exprTimeout = 0;
+    } else if (action.startsWith("LBREAK")) {
+      int duration = longBreakDuration;
       int colonIdx = action.indexOf(':');
       if (colonIdx != -1) {
         duration = action.substring(colonIdx + 1).toInt() * 60;
