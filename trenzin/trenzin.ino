@@ -617,6 +617,14 @@ void checkButtons() {
 }
 
 // ── Setup ──────────────────────────────────────────────────
+void configModeCallback(WiFiManager *myWiFiManager) {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Conecte no WiFi:");
+  lcd.setCursor(0, 1);
+  lcd.print("Trenzin-Setup   ");
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -650,6 +658,7 @@ void setup() {
 
   // Connect to Wi-Fi using WiFiManager
   WiFiManager wifiManager;
+  wifiManager.setAPCallback(configModeCallback);
   // Opcional: Se precisar resetar as configurações de Wi-Fi salvas para testar
   // o portal cativo, descomente a linha abaixo.
   // wifiManager.resetSettings();
@@ -657,7 +666,7 @@ void setup() {
   // Tenta conectar nas redes conhecidas.
   // Se falhar ou não houver redes salvas, ele sobe um Access Point chamado
   // "Trenzin-Setup"
-  if (!wifiManager.autoConnect("trenzin-by-magicoven")) {
+  if (!wifiManager.autoConnect("Trenzin-Setup")) {
     Serial.println("Falha ao conectar no Wi-Fi");
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -723,10 +732,8 @@ void setup() {
 
   // Initialize UI
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Aguardando app..");
-  lcd.setCursor(0, 1);
-  lcd.print("trenzin.local");
+  drawFace();
+  drawStatusLine();
 
   lastBlinkTime = millis();
   nextBlinkInterval = random(2500, 5000);
@@ -761,6 +768,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload,
     }
 
     sendTimerState();
+
+    // Show temporary connection message on LCD
+    tempMessage = " App Conectado! ";
+    tempMsgTimeout = millis() + 3000;
+    lastDrawnMsg = "";
+    drawStatusLine();
   } break;
   case WStype_TEXT: {
     String cmd = "";
@@ -784,22 +797,7 @@ void loop() {
     return; // Block UI/Timer updates while in setup menu
   }
 
-  bool currentConnectionState = (connectedClients > 0);
-  if (currentConnectionState != lastConnectionState) {
-    lastConnectionState = currentConnectionState;
-    lcd.clear();
-    if (!currentConnectionState) {
-      lcd.setCursor(0, 0);
-      lcd.print("Aguardando app..");
-      lcd.setCursor(0, 1);
-      lcd.print("trenzin.local");
-    } else {
-      lastDrawnExpr = (Expression)255;
-      lastDrawnMsg = "";
-      drawFace();
-      drawStatusLine();
-    }
-  }
+  // Standalone: no longer wait/display connection state here
 
   unsigned long now = millis();
 
@@ -1135,8 +1133,6 @@ void loadExpressionChars(Expression expr) {
 
 // ── Draw Functions ─────────────────────────────────────────
 void drawFace() {
-  if (connectedClients == 0)
-    return;
 
   lcd.setCursor(0, 0);
   lcd.print("                ");
@@ -1179,8 +1175,6 @@ void drawFace() {
 }
 
 void drawStatusLine() {
-  if (connectedClients == 0)
-    return;
 
   lcd.setCursor(0, 1);
 

@@ -23,7 +23,7 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
   - **Salvamento Automático:** Todas as alterações feitas fisicamente são gravadas na memória Flash do chip através da biblioteca `<Preferences.h>`.
   - **Sincronização Bidirecional em Tempo Real:** Alterações feitas na interface Web atualizam o hardware instantaneamente (e vice-versa), mantendo os alarmes e os tempos do Pomodoro sincronizados em todos os dispositivos em tempo real.
 - **Conectividade smart:**
-  - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
+  - **WiFiManager (Standalone & AP Mode):** Configuração de rede Wi-Fi através de portal captivo (`Trenzin-Setup`). Se nenhuma rede estiver cadastrada, o LCD exibe instruções amigáveis indicando para qual rede local se conectar. O sistema roda de forma 100% autônoma logo após a conexão Wi-Fi (sem travar à espera do app).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
   - **mDNS:** Permite acessar a interface do robô digitando `http://trenzin.local` no navegador.
 - **Web app integrado (SPA & PWA):**
