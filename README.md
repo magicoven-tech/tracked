@@ -64,10 +64,10 @@ A configuração dos botões não exige resistores externos. Basta conectar um t
 
 | Componente | Ligação no ESP32 | Ação no Sistema |
 |---|---|---|
-| Botão 1 | GPIO 25 | Iniciar / Pausar Pomodoro |
-| Botão 2 | GPIO 26 | Parar Pomodoro / Limpar Expressão |
-| Botão 3 | GPIO 27 | Ciclar entre todas as 10 expressões |
-| Botão 4 | GPIO 32 | Entrar no Modo de Configuração / Salvar |
+| Botão 1 | GPIO 27 | Ciclar entre todas as 10 expressões |
+| Botão 2 | GPIO 26 | Iniciar / Pausar Pomodoro |
+| Botão 3 | GPIO 25 | Parar Pomodoro / Limpar Mensagem ou Expressão |
+| Botão 4 | GPIO 32 | Menu de Configurações Universal (Pomodoro & Alarmes) |
 
 **Ligação do Potenciômetro (Ajuste de Tempo):**
 | Componente (Pernas) | Ligação no ESP32 | Função |

@@ -1696,11 +1696,6 @@ async function handleConnect() {
   trenzinConn.onConnect = () => {
     updateConnectionUI(true);
     addLog('Conectado ao Trenzin', 'system');
-
-    alarms.forEach(a => {
-      trenzinConn.send(`ALM:SET:${a.id}:${a.h}:${a.m}`);
-      trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
-    });
   };
 
   trenzinConn.onReceive = (data) => {
@@ -1747,15 +1742,15 @@ function parseArduinoMessage(data) {
       timer.config.focus = parseInt(parts[0]);
       timer.config.shortBreak = parseInt(parts[1]);
       timer.config.longBreak = parseInt(parts[2]);
-      
+
       // Update DOM inputs if modal is open
       $('#input-focus-time').value = timer.config.focus;
       $('#input-short-break').value = timer.config.shortBreak;
       $('#input-long-break').value = timer.config.longBreak;
-      
+
       // Save locally
       localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
-      
+
       // Update UI if we are in OFF state (so the 25:00 text updates)
       if (timer.state === 'off') {
         updateTimerDisplay();
@@ -1792,6 +1787,38 @@ function parseArduinoMessage(data) {
     });
     updateLCDFace(expr);
     updateLCDPreview();
+  } else if (data.startsWith('CFG:ALM:')) {
+    const parts = data.substring(8).split(':');
+    if (parts.length >= 4) {
+      const id = parseInt(parts[0]);
+      const enabled = parts[1] === '1';
+      const h = parseInt(parts[2]);
+      const m = parseInt(parts[3]);
+
+      const idx = alarms.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        if (!enabled && h === 0 && m === 0) {
+          // Treat as deleted
+          alarms.splice(idx, 1);
+        } else {
+          alarms[idx].h = h;
+          alarms[idx].m = m;
+          alarms[idx].enabled = enabled;
+        }
+      } else {
+        if (enabled || h !== 0 || m !== 0) {
+          alarms.push({
+            id: id,
+            h: h,
+            m: m,
+            enabled: enabled,
+            label: `Alarme ${id + 1}`
+          });
+        }
+      }
+      saveAlarms();
+      renderAlarms();
+    }
   } else if (data.startsWith('ACK:')) {
     // Acknowledged, no action needed
   }

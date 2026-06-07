@@ -79,10 +79,10 @@ GPIO 15      →   D7
 GND          →   R/W e VSS (Pin 1)
 VIN (5V)     →   VDD (Pin 2) e A (Pin 15, via 220Ω)
 GPIO 13      →   V0  (Pin 3) ← CONTRASTE (PWM)
-GPIO 25      →   Botão 1 (Play/Pause Pomodoro) ← INPUT_PULLUP
-GPIO 26      →   Botão 2 (Stop Pomodoro) ← INPUT_PULLUP
-GPIO 27      →   Botão 3 (Ciclar Expressões) ← INPUT_PULLUP
-GPIO 32      →   Botão 4 (Menu de Configurações) ← INPUT_PULLUP
+GPIO 27      →   Botão 1 (Ciclar Expressões) ← INPUT_PULLUP
+GPIO 26      →   Botão 2 (Play/Pause Pomodoro) ← INPUT_PULLUP
+GPIO 25      →   Botão 3 (Stop Pomodoro) ← INPUT_PULLUP
+GPIO 32      →   Botão 4 (Menu de Configurações Universal) ← INPUT_PULLUP
 GPIO 34      →   Potenciômetro 10KΩ (Pino do meio) ← ADC1
 3.3V do ESP32→   Potenciômetro 10KΩ (Pino lateral direito)
 GND          →   Potenciômetro 10KΩ (Pino lateral esquerdo)

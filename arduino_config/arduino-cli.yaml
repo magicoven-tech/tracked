@@ -1,0 +1,6 @@
+board_manager:
+    additional_urls: []
+directories:
+    data: /Users/bl4k.code/Developer/Arduino/ROHS/arduino_config/data
+    downloads: /Users/bl4k.code/Developer/Arduino/ROHS/arduino_config/downloads
+    user: /Users/bl4k.code/Developer/Arduino/ROHS/arduino_config/user
