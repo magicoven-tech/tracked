@@ -1,6 +1,5 @@
 // ============================================================
 // Trenzin — ESP32 + LCD 1602A (Wi-Fi WebSocket)
-// A cute desk buddy with expressions & Pomodoro timer
 // ============================================================
 // Wiring (4-bit parallel mode for ESP32 - 3.3V Logic):
 //   LCD RS  → GPIO 19   LCD Enable → GPIO 23
@@ -21,12 +20,12 @@
 #include "web_assets.h"
 #include <ESPmDNS.h>
 #include <LiquidCrystal.h>
+#include <Preferences.h>
 #include <WebServer.h>
 #include <WebSocketsServer.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include <time.h>
-#include <Preferences.h>
 
 Preferences preferences;
 
@@ -67,12 +66,7 @@ enum TimerState {
   TIMER_DONE
 };
 
-enum SetupState {
-  SETUP_OFF,
-  SETUP_FOCUS,
-  SETUP_SHORT_BREAK,
-  SETUP_LONG_BREAK
-};
+enum SetupState { SETUP_OFF, SETUP_FOCUS, SETUP_SHORT_BREAK, SETUP_LONG_BREAK };
 
 // ── Current State ──────────────────────────────────────────
 Expression currentExpr = EXPR_IDLE;
@@ -87,7 +81,7 @@ unsigned long blinkStart = 0;
 const unsigned long BLINK_DURATION = 180; // ms
 
 // Timer durations (can be modified via Potentiometer)
-unsigned long focusDuration = 25UL * 60; // default 25 min
+unsigned long focusDuration = 25UL * 60;     // default 25 min
 unsigned long shortBreakDuration = 5UL * 60; // default 5 min
 unsigned long longBreakDuration = 15UL * 60; // default 15 min
 
@@ -171,17 +165,18 @@ unsigned long lastBtnSetupTime = 0;
 const unsigned long BTN_COOLDOWN = 300; // 300ms between presses
 
 void checkSetupMenu() {
-  if (currentSetupState == SETUP_OFF) return;
+  if (currentSetupState == SETUP_OFF)
+    return;
 
   unsigned long now = millis();
   static unsigned long lastPotRead = 0;
-  
+
   // Read potentiometer every 100ms for smooth UI updates
   if (now - lastPotRead > 100) {
     lastPotRead = now;
     int potValue = analogRead(POT_PIN);
     unsigned int minutes = 0;
-    
+
     if (currentSetupState == SETUP_FOCUS) {
       minutes = map(potValue, 0, 4095, 1, 60);
       focusDuration = minutes * 60;
@@ -208,7 +203,7 @@ void checkSetupMenu() {
 
 void checkButtons() {
   unsigned long now = millis();
-  
+
   // Setup (GPIO 32)
   if (digitalRead(BTN_SETUP_PIN) == LOW) {
     if (now - lastBtnSetupTime > BTN_COOLDOWN) {
@@ -238,8 +233,9 @@ void checkButtons() {
     }
   }
 
-  if (currentSetupState != SETUP_OFF) return; // Block other buttons while in setup
-  
+  if (currentSetupState != SETUP_OFF)
+    return; // Block other buttons while in setup
+
   // Play/Pause (GPIO 25)
   if (digitalRead(BTN_PLAY_PIN) == LOW) {
     if (now - lastBtnPlayTime > BTN_COOLDOWN) {
@@ -256,10 +252,10 @@ void checkButtons() {
       } else if (timerState == TIMER_BREAK_PAUSED) {
         timerState = TIMER_BREAK;
         lastTimerTick = now;
-        } else {
-          timerState = TIMER_FOCUS;
-          timerSecondsRemaining = focusDuration;
-          lastTimerTick = now;
+      } else {
+        timerState = TIMER_FOCUS;
+        timerSecondsRemaining = focusDuration;
+        lastTimerTick = now;
         setExpression(EXPR_FOCUS);
       }
       sendTimerState();
@@ -286,7 +282,8 @@ void checkButtons() {
       lastBtnExprTime = now;
       Serial.println("BTN: EXPR pressionado (GPIO 27)");
       int nextExpr = (int)currentExpr + 1;
-      if (nextExpr > EXPR_DIZZY) nextExpr = EXPR_IDLE;
+      if (nextExpr > EXPR_DIZZY)
+        nextExpr = EXPR_IDLE;
       setExpression((Expression)nextExpr);
     }
   }
@@ -391,7 +388,8 @@ void setup() {
   });
   server.on("/icon-192.png", []() {
     server.sendHeader("Cache-Control", "max-age=604800, public");
-    server.send_P(200, "image/png", (const char*)WEB_ICON_PNG, WEB_ICON_PNG_LEN);
+    server.send_P(200, "image/png", (const char *)WEB_ICON_PNG,
+                  WEB_ICON_PNG_LEN);
   });
   server.begin();
 
