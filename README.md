@@ -19,6 +19,7 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 - **Configuração Local e Memória Não-Volátil (NVRAM):**
   - Integração com Potenciômetro Linear 10KΩ (GPIO 34) para ajuste fino do tempo de Foco, Pausa Curta e Pausa Longa direto na tela do LCD.
   - Salva automaticamente as durações escolhidas na memória flash interna usando `<Preferences.h>`.
+  - **Sincronização Bidirecional (`CFG:POMO`):** Qualquer alteração de tempo feita no site atualiza imediatamente o hardware (e salva na flash). Da mesma forma, alterações feitas via Potenciômetro são transmitidas na hora para atualizar o site em todos os dispositivos conectados.
 - **Conectividade smart:**
   - **WiFiManager:** Configuração de rede Wi-Fi através de portal captivo (não é necessário hardcodar senhas no código).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
