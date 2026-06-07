@@ -9,7 +9,7 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 - **Rostos e expressões:** O Trenzin possui 10 expressões dinâmicas com "olhos" animados no LCD (usando caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso (Idle) e conta com expressões de Feliz, Triste, Zangado, Focado (Focus), Dormindo (Sleep), Love (coração), Surpreso, Estrela e Tonto (X_X).
 - **Temporizador Pomodoro:**
   - Foco (25 min padrão), pausa curta (5 min) e pausa longa (15 min).
-  - O estado do temporizador (ativo, pausado, tempo restante) é sincronizado em tempo real entre o hardware (LCD) e múltiplos clientes Web via WebSockets.
+  - **Sincronização Bidirecional em Tempo Real:** O estado ativo do temporizador (ativo, pausado, tempo restante) é sincronizado em tempo real entre o hardware (LCD) e múltiplos clientes Web via WebSockets. Se um temporizador for iniciado standalone direto no ESP32, o Web App se autoajusta e sincroniza o tempo restante ao se conectar.
 - **Sistema de múltiplos alarmes:**
   - Suporta até 10 alarmes diferentes.
   - Permite configurar hora, minuto, título/nome personalizado e ligar/desligar individualmente pela interface web.

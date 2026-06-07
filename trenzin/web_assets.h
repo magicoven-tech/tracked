@@ -1757,10 +1757,17 @@ function parseArduinoMessage(data) {
     const payload = data.substring(6);
 
     if (payload === 'IDLE') {
-      // Timer idle
+      if (timer.state !== 'off') {
+        timer.stop();
+      }
     } else if (payload === 'DONE') {
-      timer.state = 'done';
-      updateTimerDisplay();
+      if (timer.state !== 'done') {
+        clearInterval(timer.interval);
+        timer.interval = null;
+        timer.state = 'done';
+        timer.remainingSeconds = 0;
+        updateTimerDisplay();
+      }
     } else if (payload.startsWith('FOCUS:') || payload.startsWith('BREAK:')) {
       // Sync timer from Arduino
       const parts = payload.split(':');
@@ -1768,10 +1775,41 @@ function parseArduinoMessage(data) {
         const mins = parseInt(parts[1]);
         const secs = parseInt(parts[2]);
         const totalRemaining = mins * 60 + secs;
+        const isPaused = parts.length >= 4 && parts[3] === 'PAUSED';
 
-        // Only sync if significantly different (>2s drift)
-        if (Math.abs(timer.remainingSeconds - totalRemaining) > 2) {
+        const isFocus = payload.startsWith('FOCUS:');
+        const targetState = isPaused ? 'paused' : (isFocus ? 'focus' : 'break');
+
+        // Update lastState for pause/resume tracking
+        if (targetState !== 'paused') {
+          timer.lastState = isFocus ? 'focus' : 'break';
+        }
+
+        // Set total seconds if starting a new cycle
+        if (timer.state === 'off' || timer.state === 'done') {
+          timer.totalSeconds = isFocus ? (timer.config.focus * 60) : (timer.config.shortBreak * 60);
+        }
+
+        // Only update if state changed or drift is significant (>2s)
+        const stateChanged = timer.state !== targetState;
+        const timeDrifted = Math.abs(timer.remainingSeconds - totalRemaining) > 2;
+
+        if (stateChanged || timeDrifted) {
+          timer.state = targetState;
           timer.remainingSeconds = totalRemaining;
+
+          // Manage local interval ticker
+          if (targetState === 'paused') {
+            if (timer.interval) {
+              clearInterval(timer.interval);
+              timer.interval = null;
+            }
+          } else {
+            if (!timer.interval) {
+              timer.interval = setInterval(() => timer._tick(), 1000);
+            }
+          }
+
           updateTimerDisplay();
         }
       }
