@@ -130,6 +130,11 @@ Qualquer pessoa pode instalar e usar o **MagicTracked Desktop** no Mac sem preci
    - O controle **ESP32** se conectará sozinho ao app via Wi-Fi assim que for ligado.
    - Dispositivos na mesma rede (celulares/tablets) podem acessar a interface pelo navegador no endereço `http://<IP-DO-MAC>:5173`.
 
+### 💡 Conectando ou Reconfigurando o Controle ESP32
+- Na barra de título do aplicativo Desktop é exibido o **IP local do seu Mac** (ex: `IP do Mac: 192.168.X.X`).
+- Caso o IP do Mac mude na sua rede Wi-Fi e o ESP32 não conecte automaticamente, ligue o ESP32 **mantendo o Botão MENU (GPIO 27) pressionado** para abrir o portal captivo `MagicTracked-Remote`.
+- Conecte o celular na rede do ESP32 e atualize o campo **"IP do Mac (Broker MQTT)"** com o IP mostrado no aplicativo.
+
 ---
 
 ## 🚀 Como operar e modificar (Para Desenvolvedores)
