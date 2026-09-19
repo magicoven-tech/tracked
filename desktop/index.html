@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MagicTracked - Interactive hand-tracked</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css" />
+
+  <!-- MediaPipe CDN Fallbacks -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+  <div id="app" class="studio-layout">
+    <!-- Top Header -->
+    <header class="studio-header">
+      <div class="brand">
+        <span class="badge live-badge" id="statusBadge">
+          <span class="pulse-dot"></span> <span id="statusText">Inicializando Câmera...</span>
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnToggleSidebar" class="btn btn-secondary" title="Alternar Painel de Controles">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+          <span>Painel</span>
+        </button>
+        <button id="btnRecordScreen" class="btn btn-secondary btn-record" title="Gravar Tela">
+          <span class="rec-dot"></span>
+          <span id="recBtnText">Gravar tela</span>
+        </button>
+        <button id="btnFullscreen" class="btn btn-secondary" title="Tela Cheia">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+          <span>Fullscreen</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="studio-workspace">
+      <!-- Canvas Container -->
+      <div class="viewport-container">
+        <video id="webcam" playsinline muted style="display: none;"></video>
+        <div id="canvasWrapper" class="canvas-wrapper">
+          <canvas id="threeCanvas"></canvas>
+          <canvas id="skeletonCanvas"></canvas>
+        </div>
+
+        <!-- Remote Control HUD Toast -->
+        <div id="remoteToast" class="remote-toast" style="display: none;">
+          <span class="remote-icon">🎮</span>
+          <span id="remoteToastText">Controle Remoto Conectado</span>
+        </div>
+
+        <!-- On-Screen Instructions -->
+        <div id="gestureHint" class="gesture-hint">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6" />
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8.5" />
+            <path
+              d="M18 8a2 2 0 0 1 2 2v6a7 7 0 0 1-7 7h-2a7 7 0 0 1-5.26-2.39l-3.37-3.7a2.13 2.13 0 0 1-.1-2.73 2.13 2.13 0 0 1 3-.32L6 14.5V11a2 2 0 0 1 2-2v0a2 2 0 0 1 2 2v.5" />
+          </svg>
+          <span>Mostre ambas as mãos para a câmera para esticar o tecido iridescente!</span>
+        </div>
+      </div>
+
+      <!-- Controls Panel (Floating / Sidebar) -->
+      <aside class="controls-sidebar" id="controlsSidebar">
+        <div class="sidebar-header">
+          <h2>Edit Controllers</h2>
+          <button id="btnReset" class="btn-text">Reset</button>
+        </div>
+
+        <div class="sidebar-scroll">
+          <!-- Quick Access Section -->
+          <section class="control-section">
+            <h3 class="section-title">Quick Access</h3>
+
+            <div class="control-group">
+              <label>Effect Shader</label>
+              <div class="segmented-control" style="flex-wrap: wrap; gap: 4px;">
+                <button id="btnMotionVeil" class="segment-btn active" style="font-size: 10px; flex: 1 1 30%;">Motion
+                  Veil</button>
+                <button id="btnLiquidRipple" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Liquid
+                  Ripple</button>
+                <button id="btnThermalVision" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Thermal
+                  Vision</button>
+                <button id="btnTouchDesigner" class="segment-btn"
+                  style="font-size: 10px; flex: 1 1 30%;">TouchDesigner</button>
+                <button id="btnAscii" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">ASCII Art</button>
+                <button id="btnGlitch" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Glitch
+                  Effect</button>
+                <button id="btnCircle" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Effect
+                  Circle</button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label>Animation</label>
+              <div class="segmented-control">
+                <button id="btnPause" class="segment-btn">Pause</button>
+                <button id="btnPlay" class="segment-btn active">Play</button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="skeletonColor">Skeleton Color</label>
+              <div class="color-picker-input">
+                <input type="color" id="skeletonColor" value="#00ffaa" />
+                <input type="text" id="skeletonColorHex" value="#00ffaa" spellcheck="false" />
+                <span class="alpha-tag">100%</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="fabricOpacity">Fabric Opacity</label>
+                <span class="value-display" id="fabricOpacityVal">0.9</span>
+              </div>
+              <input type="range" id="fabricOpacity" min="0" max="1" step="0.01" value="0.9" />
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="refractionStrength">Refraction Strength</label>
+                <span class="value-display" id="refractionStrengthVal">76</span>
+              </div>
+              <input type="range" id="refractionStrength" min="0" max="150" step="1" value="76" />
+            </div>
+          </section>
+
+          <!-- Fabric Details Section -->
+          <section class="control-section">
+            <h3 class="section-title">Fabric & Shader</h3>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="iridescence">Iridescence Level</label>
+                <span class="value-display" id="iridescenceVal">0.85</span>
+              </div>
+              <input type="range" id="iridescence" min="0" max="1" step="0.01" value="0.85" />
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="chromaticDispersion">RGB Dispersion</label>
+                <span class="value-display" id="chromaticDispersionVal">0.05</span>
+              </div>
+              <input type="range" id="chromaticDispersion" min="0" max="0.15" step="0.005" value="0.05" />
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="waveRipple">Wave Ripples</label>
+                <span class="value-display" id="waveRippleVal">0.40</span>
+              </div>
+              <input type="range" id="waveRipple" min="0" max="1" step="0.02" value="0.40" />
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="skeletonLineWidth">Skeleton Thickness</label>
+                <span class="value-display" id="skeletonLineWidthVal">2.5px</span>
+              </div>
+              <input type="range" id="skeletonLineWidth" min="1" max="6" step="0.5" value="2.5" />
+            </div>
+          </section>
+
+          <!-- Presets Section -->
+          <section class="control-section">
+            <h3 class="section-title">Presets</h3>
+            <div class="preset-grid">
+              <button class="preset-card active" data-preset="brik">
+                <div class="preset-swatch brik-swatch"></div>
+                <span>Brik Original</span>
+              </button>
+              <button class="preset-card" data-preset="liquidGlass">
+                <div class="preset-swatch glass-swatch"></div>
+                <span>Liquid Glass</span>
+              </button>
+              <button class="preset-card" data-preset="neonPrism">
+                <div class="preset-swatch neon-swatch"></div>
+                <span>Neon Prism</span>
+              </button>
+              <button class="preset-card" data-preset="silkCloth">
+                <div class="preset-swatch silk-swatch"></div>
+                <span>Rainbow Silk</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <!-- Export Sidebar Panel -->
+      <aside class="controls-sidebar export-sidebar collapsed" id="exportSidebar">
+        <div class="sidebar-header">
+          <h2>EXPORTAR</h2>
+          <button id="btnCloseExportSidebar" class="btn-text close-btn" title="Fechar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="sidebar-scroll">
+          <!-- Format Selection Cards -->
+          <div class="format-grid">
+            <button type="button" class="format-card active" id="exportFormatGif" data-format="gif">
+              <div class="format-title">GIF</div>
+              <div class="format-sub">Loop · chat e docs</div>
+            </button>
+            <button type="button" class="format-card" id="exportFormatMp4" data-format="mp4">
+              <div class="format-title">MP4</div>
+              <div class="format-sub">Vídeo · mais nítido</div>
+            </button>
+          </div>
+
+          <!-- Speed Control Section -->
+          <section class="control-section">
+            <div class="section-header-row">
+              <h3 class="section-title">Velocidade</h3>
+            </div>
+            <div class="segmented-control" id="speedControlGroup">
+              <button type="button" class="segment-btn" data-speed="0.5">0.5×</button>
+              <button type="button" class="segment-btn active" data-speed="1">1×</button>
+              <button type="button" class="segment-btn" data-speed="1.5">1.5×</button>
+              <button type="button" class="segment-btn" data-speed="2">2×</button>
+            </div>
+          </section>
+
+          <!-- FPS Control Section -->
+          <section class="control-section">
+            <div class="section-header-row">
+              <h3 class="section-title">Quadros por segundo</h3>
+              <span class="section-subtext">Mais fps = mais fluido e mais pesado</span>
+            </div>
+            <div class="segmented-control" id="fpsControlGroup">
+              <button type="button" class="segment-btn" data-fps="10">10</button>
+              <button type="button" class="segment-btn active" data-fps="15">15</button>
+              <button type="button" class="segment-btn" data-fps="20">20</button>
+              <button type="button" class="segment-btn" data-fps="24">24</button>
+            </div>
+          </section>
+
+          <!-- Resolution Control Section -->
+          <section class="control-section">
+            <div class="section-header-row">
+              <h3 class="section-title">Resolução</h3>
+              <span class="section-subtext">Auto limita ao teto do formato</span>
+            </div>
+            <div class="segmented-control" id="resControlGroup">
+              <button type="button" class="segment-btn active" data-res="auto">Auto</button>
+              <button type="button" class="segment-btn" data-res="100">100%</button>
+              <button type="button" class="segment-btn" data-res="50">50%</button>
+            </div>
+          </section>
+
+          <!-- Estimation & Download Footer -->
+          <div class="export-footer">
+            <div class="estimation-row">
+              <span class="estimative-details" id="exportEstimativeDetails">424×824px · 55 quadros · ~0.5 MB</span>
+              <span class="estimative-tag">ESTIMATIVA</span>
+            </div>
+
+            <button type="button" id="btnDownloadExport" class="btn btn-primary btn-export-action">
+              <svg id="exportBtnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span id="exportBtnText">Baixar GIF</span>
+            </button>
+            
+            <div class="export-progress-bar-wrap" id="exportProgressBarWrap" style="display: none;">
+              <div class="export-progress-bar" id="exportProgressBar"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>
