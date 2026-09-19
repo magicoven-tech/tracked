@@ -2,8 +2,7 @@
 
 O **Tracked** é uma plataforma de **Interação Humano-Máquina e Intervenção Artística** equipada com um display LCD, controle de visuais 3D por gestos (MediaPipe + WebGL/Three.js), temporizador Pomodoro e controle de parâmetros em tempo real. Desenvolvido para rodar em um **ESP32** integrado a uma aplicação Desktop e interface Web responsiva via WebSockets/MQTT.
 
-![Uploading prototype.jpeg…]()
-
+<img width="960" height="1280" alt="prototype" src="https://github.com/user-attachments/assets/2e25b68b-17b6-47b7-8526-1988c2c0c082" />
 
 ---
 
