@@ -1,3 +1,5 @@
+[![Deploy Web App to GitHub Pages](https://github.com/magicoven-tech/tracked/actions/workflows/deploy.yml/badge.svg)](https://github.com/magicoven-tech/tracked/actions/workflows/deploy.yml)
+
 # Tracked OS
 
 O **Tracked** é uma plataforma de **Interação Humano-Máquina e Intervenção Artística** equipada com um display LCD, controle de visuais 3D por gestos (MediaPipe + WebGL/Three.js), temporizador Pomodoro e controle de parâmetros em tempo real. Desenvolvido para rodar em um **ESP32** integrado a uma aplicação Desktop e interface Web responsiva via WebSockets/MQTT.
