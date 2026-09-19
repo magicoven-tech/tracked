@@ -120,8 +120,8 @@ Para chegar na versão estável e fluida do Tracked OS 2.0, passamos por uma sé
 
 1. Altere o código HTML/CSS/JS na pasta `web/`.
 2. Rode o construtor usando o Node: `node build_web.js`.
-3. Verifique se o `trenzin/web_assets.h` foi gerado/atualizado.
-4. Faça upload pelo IDE do Arduino (ou `arduino-cli`) para o ESP32 (`trenzin.ino`).
+3. Verifique se o `tracked/web_assets.h` foi gerado/atualizado.
+4. Faça upload pelo IDE do Arduino (ou `arduino-cli`) para o ESP32 (`tracked.ino`).
 5. Quando o robô ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Tracked-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
 6. Digite `http://tracked.local` no seu navegador!
 

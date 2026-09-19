@@ -59,7 +59,7 @@ function build() {
         
         out += "#endif\n";
         
-        const outPath = path.join(rootDir, 'trenzin', 'web_assets.h');
+        const outPath = path.join(rootDir, 'tracked', 'web_assets.h');
         fs.writeFileSync(outPath, out, 'utf8');
         console.log(`Gerado ${outPath} com sucesso!`);
     } catch (err) {
