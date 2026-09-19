@@ -15,7 +15,8 @@ class WebSocketConnection {
   connect(ip) {
     return new Promise((resolve) => {
       try {
-        this.socket = new WebSocket(`ws://${ip}:81/`);
+        const wsUrl = (ip.startsWith('ws://') || ip.startsWith('wss://')) ? ip : `ws://${ip}:81/`;
+        this.socket = new WebSocket(wsUrl);
 
         this.socket.onopen = () => {
           this.connected = true;
@@ -419,7 +420,9 @@ async function handleConnect() {
   }
 
   let ipToConnect;
-  if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '') {
+  if (window.location.hostname && window.location.hostname.includes('github.io')) {
+    ipToConnect = 'wss://a1d0120f.ala.us-east-1.emqxsl.com:8084/mqtt';
+  } else if (window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '') {
     ipToConnect = window.location.hostname;
   } else {
     // Para desenvolvimento local (mock / debugging) sem o ESP32 real
