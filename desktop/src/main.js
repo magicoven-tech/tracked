@@ -93,9 +93,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateStatus('Inicializando Câmera...', false);
   const camSuccess = await tracker.startCamera();
   if (camSuccess) {
-    updateStatus('Câmera Ativa (Webcam)', true);
+    updateStatus('Câmera Ativa', true);
   } else {
-    updateStatus('Modo Simulador Demo', true);
+    updateStatus('Câmera Indisponível', false);
   }
 
   function updateStatus(text, isLive) {

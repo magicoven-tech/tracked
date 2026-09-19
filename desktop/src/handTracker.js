@@ -47,11 +47,27 @@ export class HandTracker {
     }
   }
 
-  async startCamera() {
-    this.stopDemo();
+  async enumerateVideoDevices() {
     try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      return devices.filter(device => device.kind === 'videoinput');
+    } catch (err) {
+      console.warn('Could not enumerate video devices:', err);
+      return [];
+    }
+  }
+
+  async startCamera(selectedDeviceId = null) {
+    this.stopDemo();
+    this.stopCamera();
+
+    try {
+      const videoConstraints = selectedDeviceId 
+        ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' };
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        video: videoConstraints,
         audio: false
       });
 
