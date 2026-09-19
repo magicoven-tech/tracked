@@ -15,6 +15,7 @@ let mainWindow = null;
 let aedesInstance = null;
 let mqttServer = null;
 let bonjour = null;
+let webHttpServer = null;
 
 // Função para descobrir o IP local IPv4 do Mac
 function getMacLocalIp() {
