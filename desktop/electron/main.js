@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import createAedes from 'aedes';
 import net from 'net';
+import http from 'http';
+import fs from 'fs';
 import os from 'os';
 import { Bonjour } from 'bonjour-service';
 
@@ -13,6 +15,7 @@ let mainWindow = null;
 let aedesInstance = null;
 let mqttServer = null;
 let bonjour = null;
+let webHttpServer = null;
 
 // Função para descobrir o IP local IPv4 do Mac
 function getMacLocalIp() {
@@ -157,6 +160,77 @@ function createWindow() {
   });
 }
 
+// Servidor Web HTTP estático embutido para produção (permite clientes web externos na porta 5173)
+function startStaticWebServer() {
+  const isDev = process.env.NODE_ENV !== 'production' && !app.isPackaged;
+  if (isDev) return;
+
+  const WEB_PORT = 5173;
+  const distPath = path.join(__dirname, '../dist');
+
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2'
+  };
+
+  try {
+    webHttpServer = http.createServer((req, res) => {
+      let reqUrl = (req.url || '/').split('?')[0];
+      if (reqUrl === '/') reqUrl = '/index.html';
+      const filePath = path.normalize(path.join(distPath, reqUrl));
+
+      if (!filePath.startsWith(distPath)) {
+        res.writeHead(403);
+        return res.end('Access Denied');
+      }
+
+      fs.stat(filePath, (err, stats) => {
+        if (err || !stats.isFile()) {
+          const indexPath = path.join(distPath, 'index.html');
+          fs.readFile(indexPath, (err2, data) => {
+            if (err2) {
+              res.writeHead(404);
+              return res.end('Not Found');
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(data);
+          });
+        } else {
+          const ext = path.extname(filePath).toLowerCase();
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          fs.readFile(filePath, (err3, data) => {
+            if (err3) {
+              res.writeHead(500);
+              return res.end('Internal Error');
+            }
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(data);
+          });
+        }
+      });
+    });
+
+    webHttpServer.listen(WEB_PORT, '0.0.0.0', () => {
+      console.log(`[Web Server] Servidor Web estático ativo em http://0.0.0.0:${WEB_PORT}`);
+    });
+
+    webHttpServer.on('error', (err) => {
+      console.warn('[Web Server] Aviso ao iniciar servidor Web estático:', err.message);
+    });
+  } catch (err) {
+    console.error('[Web Server] Erro ao iniciar servidor HTTP:', err);
+  }
+}
+
 // IPC Listener to publish status back to MQTT (for updating ESP32 LCD display)
 ipcMain.on('publish-status', (event, { topic, payload }) => {
   if (aedesInstance) {
@@ -171,6 +245,7 @@ ipcMain.on('publish-status', (event, { topic, payload }) => {
 
 app.whenReady().then(() => {
   startMqttBroker();
+  startStaticWebServer();
   createWindow();
 
   app.on('activate', () => {
@@ -187,6 +262,9 @@ app.on('window-all-closed', () => {
   }
   if (mqttServer) {
     mqttServer.close();
+  }
+  if (webHttpServer) {
+    webHttpServer.close();
   }
   if (process.platform !== 'darwin') {
     app.quit();

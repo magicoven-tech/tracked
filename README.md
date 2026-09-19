@@ -118,7 +118,28 @@ Para chegar na versão estável e fluida do Tracked OS 2.0, passamos por uma sé
 
 ---
 
-## 🚀 Como operar e modificar
+## 📦 Instalação do Aplicativo Desktop (.dmg no macOS - Sem Terminal)
+
+Qualquer pessoa pode instalar e usar o **MagicTracked Desktop** no Mac sem precisar abrir o terminal ou instalar o Node.js:
+
+1. Acesse a aba **Releases** do projeto no GitHub e baixe o arquivo `MagicTracked-1.0.0-arm64.dmg` (para Macs M1/M2/M3/M4) ou `MagicTracked-1.0.0-x64.dmg` (para Macs Intel).
+2. Dê um duplo clique no arquivo `.dmg` baixado e **arraste o ícone do MagicTracked para a pasta Aplicações (Applications)**.
+3. **Primeira Execução (Aviso de Desenvolvedor Não Verificado do macOS):**
+   - Na primeira vez em que abrir o aplicativo, o macOS poderá exibir uma mensagem informando que o desenvolvedor não foi verificado.
+   - Para abrir: **Clique com o botão direito (ou Control + Clique)** no ícone do MagicTracked na pasta Aplicações e selecione **Abrir** (ou vá em *Ajustes do Sistema > Privacidade e Segurança* e clique em *Abrir mesmo assim*).
+4. **Pronto!** 
+   - O aplicativo iniciará automaticamente o **Broker MQTT (porta 1883)**, o anúncio na rede (`magictracked.local`) e o **Servidor Web (porta 5173)**.
+   - O controle **ESP32** se conectará sozinho ao app via Wi-Fi assim que for ligado.
+   - Dispositivos na mesma rede (celulares/tablets) podem acessar a interface pelo navegador no endereço `http://<IP-DO-MAC>:5173`.
+
+### 💡 Conectando ou Reconfigurando o Controle ESP32
+- Na barra de título do aplicativo Desktop é exibido o **IP local do seu Mac** (ex: `IP do Mac: 192.168.X.X`).
+- Caso o IP do Mac mude na sua rede Wi-Fi e o ESP32 não conecte automaticamente, ligue o ESP32 **mantendo o Botão MENU (GPIO 27) pressionado** para abrir o portal captivo `MagicTracked-Remote`.
+- Conecte o celular na rede do ESP32 e atualize o campo **"IP do Mac (Broker MQTT)"** com o IP mostrado no aplicativo.
+
+---
+
+## 🚀 Como operar e modificar (Para Desenvolvedores)
 
 1. Altere o código HTML/CSS/JS na pasta `web/`.
 2. Rode o construtor usando o Node: `node build_web.js`.
