@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - web
+      - mqtt
   workflow_dispatch:
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: desktop/package-lock.json
 
