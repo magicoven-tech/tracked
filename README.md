@@ -1,6 +1,6 @@
 # Tracked OS
 
-O **Tracked** é um companheiro de mesa inteligente (*desk buddy*) equipado com um display LCD, capaz de expressar emoções, atuar como um temporizador Pomodoro e gerenciar múltiplos alarmes. Desenvolvido para rodar em um **ESP32** com uma interface Web moderna, responsiva e sincronizada em tempo real via WebSockets.
+O **Tracked** é uma plataforma de **Interação Humano-Máquina e Intervenção Artística** equipada com um display LCD, controle de visuais 3D por gestos (MediaPipe + WebGL/Three.js), temporizador Pomodoro e controle de parâmetros em tempo real. Desenvolvido para rodar em um **ESP32** integrado a uma aplicação Desktop e interface Web responsiva via WebSockets/MQTT.
 
 ---
 
@@ -25,7 +25,7 @@ O **Tracked** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
 - **Conectividade smart:**
   - **WiFiManager (Standalone & AP Mode):** Configuração de rede Wi-Fi através de portal captivo (`Tracked-Setup`). Se nenhuma rede estiver cadastrada, o LCD exibe instruções amigáveis indicando para qual rede local se conectar. O sistema roda de forma 100% autônoma logo após a conexão Wi-Fi (sem travar à espera do app).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
-  - **mDNS:** Permite acessar a interface do robô digitando `http://tracked.local` no navegador.
+  - **mDNS:** Permite acessar a interface do controlador digitando `http://tracked.local` no navegador.
 - **Web app integrado (SPA & PWA):**
   - Hospedado no próprio chip ESP32 (servidor Web embutido).
   - Interface desenvolvida em Vanilla JS, HTML e CSS (sem dependências pesadas de frameworks) com tema escuro elegante.
@@ -122,7 +122,7 @@ Para chegar na versão estável e fluida do Tracked OS 2.0, passamos por uma sé
 2. Rode o construtor usando o Node: `node build_web.js`.
 3. Verifique se o `tracked/web_assets.h` foi gerado/atualizado.
 4. Faça upload pelo IDE do Arduino (ou `arduino-cli`) para o ESP32 (`tracked.ino`).
-5. Quando o robô ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Tracked-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
+5. Quando o controlador ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Tracked-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
 6. Digite `http://tracked.local` no seu navegador!
 
 <div align="center">

@@ -13,9 +13,9 @@ const char WEB_HTML[] PROGMEM = R"=====(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>Tracked - Seu companheiro de mesa</title>
+  <title>Tracked - Interação Humano-Máquina & Intervenção Artística</title>
   <meta name="description"
-    content="Control your Tracked desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
+    content="Tracked - Plataforma de Interação Humano-Máquina e Intervenção Artística em Tempo Real.">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,7 +46,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
       <header class="header animate-in" id="header">
         <div class="header__brand">
           <h1 class="header__logo">TRACK<span>ED</span></h1>
-          <span class="header__tagline" id="date-display">Seu companheiro de mesa</span>
+          <span class="header__tagline" id="date-display">Interação Humano-Máquina & Intervenção Artística</span>
         </div>
         <div class="connection-group">
           <button class="connect-btn" id="connect-btn">
@@ -2088,7 +2088,7 @@ function renderAlarms() {
 )=====";
 
 const char WEB_MANIFEST[] PROGMEM = R"=====(
-{"name":"Tracked OS","short_name":"Tracked","description":"Seu companheiro de mesa inteligente","start_url":"/","display":"standalone","background_color":"#121212","theme_color":"#121212","orientation":"portrait-primary","icons":[{"src":"/icon-192.png","type":"image/svg+xml","sizes":"any"}]})=====";
+{"name":"Tracked OS","short_name":"Tracked","description":"Interação Humano-Máquina & Intervenção Artística","start_url":"/","display":"standalone","background_color":"#121212","theme_color":"#121212","orientation":"portrait-primary","icons":[{"src":"/icon-192.png","type":"image/svg+xml","sizes":"any"}]})=====";
 
 const char WEB_SW[] PROGMEM = R"=====(
 const CACHE_NAME = 'tracked-cache-v1'; const ASSETS_TO_CACHE = [ '/', '/style.css', '/app.js', '/manifest.json', '/icon-192.png' ]; self.addEventListener('install', (event) => { event.waitUntil( caches.open(CACHE_NAME).then((cache) => { return cache.addAll(ASSETS_TO_CACHE); }).then(() => self.skipWaiting()) ); }); self.addEventListener('activate', (event) => { event.waitUntil( caches.keys().then((cacheNames) => { return Promise.all( cacheNames.map((cache) => { if (cache !== CACHE_NAME) { return caches.delete(cache); } }) ); }).then(() => self.clients.claim()) ); }); self.addEventListener('fetch', (event) => { if (event.request.method !== 'GET' || event.request.url.includes(':81') || event.request.url.startsWith('ws:')) { return; } event.respondWith( caches.match(event.request).then((cachedResponse) => { if (cachedResponse) { return cachedResponse; } return fetch(event.request).then((response) => { if (response && response.status === 200 && response.type === 'basic') { const responseToCache = response.clone(); caches.open(CACHE_NAME).then((cache) => { cache.put(event.request, responseToCache); }); } return response; }).catch(() => { }); }) ); });)=====";
