@@ -614,16 +614,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.electronAPI.onRemoteControl((data) => handleRemoteCommand(data));
   }
 
-  // 2. WebSocket Fallback (for Web Browsers at localhost:5173 or remote IP)
+  // 2. WebSocket & MQTT Cloud Fallback (EMQX Cloud for GitHub Pages / Web Browsers)
   try {
-    const wsHost = window.location.hostname || 'localhost';
-    const ws = new WebSocket(`ws://${wsHost}:1884`);
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const emqxHost = 'a1d0120f.ala.us-east-1.emqxsl.com';
+    const wsUrl = isGitHubPages 
+      ? `wss://${emqxHost}:8084/mqtt`
+      : `ws://${window.location.hostname || 'localhost'}:1884`;
+
+    const ws = new WebSocket(wsUrl);
     ws.onopen = () => {
-      console.log('[Remote Control] Conectado ao servidor WebSocket do Mac (porta 1884)!');
+      console.log(`[Remote Control] Conectado ao servidor ${isGitHubPages ? 'EMQX Cloud WSS (' + emqxHost + ')' : 'WebSocket local do Mac'}!`);
     };
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         handleRemoteCommand(data);
       } catch (e) {
         console.warn('Erro ao ler mensagem WebSocket:', e);
