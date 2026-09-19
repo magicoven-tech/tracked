@@ -1,6 +1,7 @@
 import { AppRenderer } from './renderer.js';
 import { HandTracker } from './handTracker.js';
 import { CanvasExporter } from './exporter.js';
+import mqtt from 'mqtt';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
@@ -614,28 +615,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.electronAPI.onRemoteControl((data) => handleRemoteCommand(data));
   }
 
-  // 2. WebSocket & MQTT Cloud Fallback (EMQX Cloud for GitHub Pages / Web Browsers)
+  // 2. MQTT Cloud Connection (EMQX Cloud WSS para Web / GitHub Pages)
   try {
-    const isGitHubPages = window.location.hostname.includes('github.io');
     const emqxHost = 'a1d0120f.ala.us-east-1.emqxsl.com';
-    const wsUrl = isGitHubPages 
-      ? `wss://${emqxHost}:8084/mqtt`
-      : `ws://${window.location.hostname || 'localhost'}:1884`;
+    console.log(`[Remote Control] Conectando ao EMQX Cloud via WSS em wss://${emqxHost}:8084/mqtt...`);
+    
+    const client = mqtt.connect(`wss://${emqxHost}:8084/mqtt`, {
+      username: 'tracked_user',
+      password: 'tufjow-racxof-roRxo9',
+      clientId: 'Web_Browser_' + Math.random().toString(16).substring(2, 8)
+    });
 
-    const ws = isGitHubPages ? new WebSocket(wsUrl, ['mqtt']) : new WebSocket(wsUrl);
-    ws.onopen = () => {
-      console.log(`[Remote Control] Conectado ao servidor ${isGitHubPages ? 'EMQX Cloud WSS (' + emqxHost + ')' : 'WebSocket local do Mac'}!`);
-    };
-    ws.onmessage = (event) => {
+    client.on('connect', () => {
+      console.log(`[Remote Control] Conectado ao EMQX Cloud via WSS com sucesso!`);
+      client.subscribe('magictracked/cmd/#');
+    });
+
+    client.on('message', (topic, payloadBuffer) => {
       try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        handleRemoteCommand(data);
+        const payloadStr = payloadBuffer.toString('utf8').trim();
+        console.log(`[Remote Control RX] Tópico: ${topic} | Payload: ${payloadStr}`);
+        handleRemoteCommand({ topic, payload: payloadStr });
       } catch (e) {
-        console.warn('Erro ao ler mensagem WebSocket:', e);
+        console.warn('Erro ao processar mensagem MQTT:', e);
       }
-    };
+    });
+
+    client.on('error', (err) => {
+      console.warn('[Remote Control] Erro no cliente MQTT WSS:', err.message);
+    });
   } catch (err) {
-    console.log('[Remote Control] Conexão WebSocket não iniciada:', err);
+    console.warn('[Remote Control] Não foi possível iniciar cliente MQTT WSS:', err);
   }
 });
 
