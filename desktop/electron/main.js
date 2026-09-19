@@ -32,90 +32,62 @@ function getMacLocalIp() {
 
 const macIp = getMacLocalIp();
 
-// Initialize Embedded MQTT Broker (Aedes) on port 1883 + mDNS Bonjour Service
+import mqtt from 'mqtt';
+
+// EMQX Cloud Credentials
+const EMQX_HOST = 'mqtt://a1d0120f.ala.us-east-1.emqxsl.com:1883';
+const EMQX_USER = 'tracked_user';
+const EMQX_PASS = 'tufjow-racxof-roRxo9';
+
+let emqxClient = null;
+
 async function startMqttBroker() {
   try {
-    aedesInstance = createAedes();
-    mqttServer = net.createServer(aedesInstance.handle);
-
-    const PORT = 1883;
-    mqttServer.listen(PORT, '0.0.0.0', () => {
-      console.log(`=======================================================`);
-      console.log(`[MQTT Broker] Aedes rodando na porta ${PORT} (0.0.0.0)`);
-      console.log(`[Mac IP Local] 👉 ${macIp}`);
-      console.log(`=======================================================`);
-
-      try {
-        bonjour = new Bonjour();
-        bonjour.publish({
-          name: 'magictracked',
-          type: 'mqtt',
-          port: PORT,
-          txt: { service: 'MagicTracked MQTT Broker' }
-        });
-        console.log('[mDNS] Serviço Bonjour "magictracked.local" (MQTT) anunciado na rede local!');
-      } catch (e) {
-        console.warn('[mDNS] Aviso ao registrar serviço Bonjour:', e);
-      }
+    // 1. Conecta o App Desktop ao Broker Unificado na Nuvem (EMQX Cloud)
+    console.log(`[EMQX Cloud] Conectando Electron ao broker ${EMQX_HOST}...`);
+    emqxClient = mqtt.connect(EMQX_HOST, {
+      username: EMQX_USER,
+      password: EMQX_PASS,
+      clientId: 'Electron_Desktop_' + Math.random().toString(16).substring(2, 8)
     });
 
-    aedesInstance.on('client', (client) => {
-      console.log(`[MQTT Broker] ESP32 Conectado! Client ID: ${client ? client.id : 'desconhecido'}`);
+    emqxClient.on('connect', () => {
+      console.log('=======================================================');
+      console.log('[EMQX Cloud] Electron Desktop conectado com sucesso!');
+      console.log('=======================================================');
+      emqxClient.subscribe('magictracked/cmd/#');
+      emqxClient.subscribe('magictracked/status/#');
     });
 
-    aedesInstance.on('clientDisconnect', (client) => {
-      console.log(`[MQTT Broker] ESP32 Desconectado: ${client ? client.id : 'desconhecido'}`);
-    });
+    emqxClient.on('message', (topic, packetPayload) => {
+      if (!topic) return;
+      const payloadStr = packetPayload ? packetPayload.toString('utf8').trim() : '';
+      console.log(`[EMQX RX] Tópico: ${topic} | Payload: ${payloadStr}`);
 
-    mqttServer.on('error', (err) => {
-      console.warn('[MQTT Broker] Aviso no servidor MQTT (net):', err.message);
-    });
-
-    // Setup WebSocket server on port 1884 for Web browser clients (e.g. localhost:5173)
-    let wss = null;
-    try {
-      const { WebSocketServer } = await import('ws');
-      wss = new WebSocketServer({ port: 1884 });
-      wss.on('error', (err) => {
-        console.warn('[WebSocket Server] Aviso no servidor WebSocket:', err.message);
-      });
-      console.log('[WebSocket Server] Broadcast em ws://0.0.0.0:1884 ativo!');
-    } catch (e) {
-      console.warn('[WebSocket Server] Não foi possível iniciar WebSocket server:', e.message);
-    }
-
-    // Listen to incoming published messages
-    aedesInstance.on('publish', (packet, client) => {
-      if (!packet || !packet.topic) return;
-      
-      const topic = packet.topic.toString().trim();
-      if (topic.startsWith('$SYS')) return;
-
-      const payloadStr = packet.payload ? packet.payload.toString('utf8').trim() : '';
-
-      console.log(`[MQTT RX] Tópico: ${topic} | Payload: ${payloadStr}`);
-
-      // 1. Forward remote control commands to Electron renderer window
+      // Repassa os comandos para a janela 3D do Electron
       if (mainWindow && !mainWindow.isDestroyed() && topic.startsWith('magictracked/cmd/')) {
         mainWindow.webContents.send('mqtt-command', {
           topic,
           payload: payloadStr
         });
       }
+    });
 
-      // 2. Broadcast to Web Browser clients via WebSocket
-      if (wss && topic.startsWith('magictracked/cmd/')) {
-        const msgJson = JSON.stringify({ topic, payload: payloadStr });
-        wss.clients.forEach((wsClient) => {
-          if (wsClient.readyState === 1) { // OPEN
-            wsClient.send(msgJson);
-          }
-        });
-      }
+    emqxClient.on('error', (err) => {
+      console.warn('[EMQX Cloud] Aviso de conexão:', err.message);
+    });
+
+    // 2. Broker Local Fallback (Aedes) mantido para desenvolvimento offline
+    aedesInstance = createAedes();
+    mqttServer = net.createServer(aedesInstance.handle);
+
+    const PORT = 1883;
+    mqttServer.listen(PORT, '0.0.0.0', () => {
+      console.log(`[MQTT Broker Local] Aedes ouvindo na porta ${PORT}`);
     });
 
   } catch (err) {
-    console.error('[MQTT Broker] Erro ao iniciar servidor MQTT:', err);
+    console.error('[MQTT Broker] Erro ao iniciar serviços MQTT:', err);
   }
 }
 
@@ -231,12 +203,18 @@ function startStaticWebServer() {
   }
 }
 
-// IPC Listener to publish status back to MQTT (for updating ESP32 LCD display)
+// IPC Listener to publish status back to MQTT (for updating ESP32 LCD display / Web App)
 ipcMain.on('publish-status', (event, { topic, payload }) => {
+  const payloadStr = typeof payload === 'object' ? JSON.stringify(payload) : String(payload);
+  
+  if (emqxClient && emqxClient.connected) {
+    emqxClient.publish(topic || 'magictracked/status/app', payloadStr);
+  }
+  
   if (aedesInstance) {
     aedesInstance.publish({
       topic: topic || 'magictracked/status/app',
-      payload: Buffer.from(typeof payload === 'object' ? JSON.stringify(payload) : String(payload)),
+      payload: Buffer.from(payloadStr),
       qos: 0,
       retain: false
     });

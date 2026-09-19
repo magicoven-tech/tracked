@@ -12,17 +12,17 @@
 // Buttons (INPUT_PULLUP):
 //   BTN_PREV  (GPIO 26) → Item Anterior
 //   BTN_NEXT  (GPIO 25) → Próximo Item
-//   BTN_MENU  (GPIO 27) → Alterna entre 4 Modos (Segure ao ligar para Resetar Wi-Fi/Portal)
-//   BTN_APPLY (GPIO 32) → Aplicar Efeito/Preset ou Disparar Ação
+//   BTN_MENU  (GPIO 27) → Alterna entre 4 Modos (Segure ao ligar para Resetar
+//   Wi-Fi/Portal) BTN_APPLY (GPIO 32) → Aplicar Efeito/Preset ou Disparar Ação
 //   POT_PIN   (GPIO 34) → Ajuste em Tempo Real dos Parâmetros
 // ============================================================
 
+#include <ESPmDNS.h>
+#include <LiquidCrystal.h>
+#include <Preferences.h>
+#include <PubSubClient.h>
 #include <WiFi.h>
 #include <WiFiManager.h>
-#include <LiquidCrystal.h>
-#include <PubSubClient.h>
-#include <Preferences.h>
-#include <ESPmDNS.h>
 
 Preferences preferences;
 
@@ -38,21 +38,20 @@ LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-char brokerIp[32] = "192.168.0.8"; // Fallback inicial (alterável no Portal ou salvo na Flash)
+char brokerIp[64] = "a1d0120f.ala.us-east-1.emqxsl.com";
 const int MQTT_PORT = 1883;
 bool shouldSaveConfig = false;
 
 // Callback para salvar configurações do WiFiManager
-void saveParamsCallback() {
-  shouldSaveConfig = true;
-}
+void saveParamsCallback() { shouldSaveConfig = true; }
 
 // ── Busca de Hostname por mDNS ─────────────────────────────
 bool resolveMacAddress() {
   Serial.println("[mDNS] Buscando 'magictracked.local' na rede Wi-Fi...");
   IPAddress resolvedIp;
 
-  // Tenta resolver via mDNS nativo com timeout curto (300ms) para não travar o loop
+  // Tenta resolver via mDNS nativo com timeout curto (300ms) para não travar o
+  // loop
   resolvedIp = MDNS.queryHost("magictracked.local", 300);
 
   if (resolvedIp == INADDR_NONE || resolvedIp == IPAddress(0, 0, 0, 0)) {
@@ -60,16 +59,110 @@ bool resolveMacAddress() {
   }
 
   if (resolvedIp != INADDR_NONE && resolvedIp != IPAddress(0, 0, 0, 0)) {
-    snprintf(brokerIp, sizeof(brokerIp), "%d.%d.%d.%d", resolvedIp[0], resolvedIp[1], resolvedIp[2], resolvedIp[3]);
+    snprintf(brokerIp, sizeof(brokerIp), "%d.%d.%d.%d", resolvedIp[0],
+             resolvedIp[1], resolvedIp[2], resolvedIp[3]);
     Serial.printf("[mDNS] Mac encontrado em: %s\n", brokerIp);
     return true;
   }
 
-  Serial.println("[mDNS] Não foi possível resolver magictracked.local. Usando IP salvo/fallback.");
+  Serial.println("[mDNS] Não foi possível resolver magictracked.local. Usando "
+                 "IP salvo/fallback.");
   return false;
 }
 
-// ... lists omitted ...
+// ── Remote Control Modes ───────────────────────────────────
+enum ControllerMode {
+  MODE_EFFECTS = 0,
+  MODE_PRESETS = 1,
+  MODE_PARAMS = 2,
+  MODE_ACTIONS = 3
+};
+
+ControllerMode currentMode = MODE_EFFECTS;
+int selectedIndex = 0;
+
+// ── Data Lists ─────────────────────────────────────────────
+struct EffectItem {
+  const char *displayName;
+  const char *cmdId;
+};
+
+EffectItem EFFECTS_LIST[] = {{"Motion Veil", "motionVeil"},
+                             {"Liquid Ripple", "liquidRipple"},
+                             {"Thermal Vision", "thermalVision"},
+                             {"TouchDesigner", "touchDesignerPortal"},
+                             {"ASCII Art", "ascii"},
+                             {"Glitch Effect", "glitch"},
+                             {"Effect Circle", "circle"}};
+const int TOTAL_EFFECTS = 7;
+
+struct PresetItem {
+  const char *displayName;
+  const char *cmdId;
+};
+
+PresetItem PRESETS_LIST[] = {{"Brik Original", "brik"},
+                             {"Liquid Glass", "liquidGlass"},
+                             {"Neon Prism", "neonPrism"},
+                             {"Rainbow Silk", "silkCloth"}};
+const int TOTAL_PRESETS = 4;
+
+struct ParamItem {
+  const char *displayName;
+  const char *paramId;
+  float minVal;
+  float maxVal;
+  bool isInt;
+};
+
+ParamItem PARAMS_LIST[] = {
+    {"Iridescencia", "uIridescence", 0.0f, 1.0f, false},
+    {"Dispersao RGB", "uChromaticDispersion", 0.0f, 0.15f, false},
+    {"Ondulacao", "uWaveRipple", 0.0f, 1.0f, false},
+    {"Opacidade", "uOpacity", 0.0f, 1.0f, false},
+    {"Refracao", "uRefractionStrength", 0.0f, 150.0f, true},
+    {"Esqueleto", "skeletonLineWidth", 1.0f, 6.0f, false}};
+const int TOTAL_PARAMS = 6;
+
+struct ActionItem {
+  const char *displayName;
+  const char *cmdId;
+};
+
+ActionItem ACTIONS_LIST[] = {{"Play / Pause", "play"},
+                             {"Gravar Tela", "rec_toggle"},
+                             {"Reset Controls", "reset"},
+                             {"Tela Cheia", "fullscreen"}};
+const int TOTAL_ACTIONS = 4;
+
+// ── Potentiometer State ────────────────────────────────────
+int lastPotRaw = -1;
+unsigned long lastPotSendTime = 0;
+
+// ── Button Debounce ────────────────────────────────────────
+unsigned long lastBtnMenuTime = 0;
+unsigned long lastBtnPrevTime = 0;
+unsigned long lastBtnNextTime = 0;
+unsigned long lastBtnApplyTime = 0;
+const unsigned long BTN_COOLDOWN = 250;
+
+// ── LCD Status Overlay ─────────────────────────────────────
+String overlayMsg = "";
+unsigned long overlayTimeout = 0;
+
+// ── MQTT Callback for incoming status from Mac ──────────────
+void mqttCallback(char *topic, byte *payload, unsigned int length) {
+  String msg = "";
+  for (unsigned int i = 0; i < length; i++) {
+    msg += (char)payload[i];
+  }
+  Serial.printf("[MQTT RX] %s: %s\n", topic, msg.c_str());
+
+  if (String(topic) == "magictracked/status/app") {
+    overlayMsg = "Mac: Conectado";
+    overlayTimeout = millis() + 2000;
+  }
+}
 
 void reconnectMQTT() {
   if (!mqttClient.connected()) {
@@ -80,7 +173,8 @@ void reconnectMQTT() {
     Serial.println(")...");
 
     String clientId = "ESP32_TrackedRemote_" + String(random(0xffff), HEX);
-    if (mqttClient.connect(clientId.c_str())) {
+    if (mqttClient.connect(clientId.c_str(), "tracked_user",
+                           "tufjow-racxof-roRxo9")) {
       Serial.println("MQTT Conectado com sucesso!");
       mqttClient.subscribe("magictracked/status/#");
       mqttClient.publish("magictracked/cmd/action", "connect_ack");
@@ -98,7 +192,8 @@ void updateLcdDisplay() {
     lcd.print("     STATUS     ");
     lcd.setCursor(0, 1);
     String padded = overlayMsg;
-    while (padded.length() < 16) padded += ' ';
+    while (padded.length() < 16)
+      padded += ' ';
     lcd.print(padded.substring(0, 16));
     return;
   }
@@ -107,35 +202,41 @@ void updateLcdDisplay() {
   char line2[17];
 
   switch (currentMode) {
-    case MODE_EFFECTS: {
-      snprintf(line1, sizeof(line1), "[EFEITO] %d/%d   ", selectedIndex + 1, TOTAL_EFFECTS);
-      snprintf(line2, sizeof(line2), "%-16s", EFFECTS_LIST[selectedIndex].displayName);
-      break;
-    }
-    case MODE_PRESETS: {
-      snprintf(line1, sizeof(line1), "[PRESET] %d/%d   ", selectedIndex + 1, TOTAL_PRESETS);
-      snprintf(line2, sizeof(line2), "%-16s", PRESETS_LIST[selectedIndex].displayName);
-      break;
-    }
-    case MODE_PARAMS: {
-      ParamItem item = PARAMS_LIST[selectedIndex];
-      int potVal = analogRead(POT_PIN);
-      float norm = (float)potVal / 4095.0f;
-      float calculatedVal = item.minVal + norm * (item.maxVal - item.minVal);
+  case MODE_EFFECTS: {
+    snprintf(line1, sizeof(line1), "[EFEITO] %d/%d   ", selectedIndex + 1,
+             TOTAL_EFFECTS);
+    snprintf(line2, sizeof(line2), "%-16s",
+             EFFECTS_LIST[selectedIndex].displayName);
+    break;
+  }
+  case MODE_PRESETS: {
+    snprintf(line1, sizeof(line1), "[PRESET] %d/%d   ", selectedIndex + 1,
+             TOTAL_PRESETS);
+    snprintf(line2, sizeof(line2), "%-16s",
+             PRESETS_LIST[selectedIndex].displayName);
+    break;
+  }
+  case MODE_PARAMS: {
+    ParamItem item = PARAMS_LIST[selectedIndex];
+    int potVal = analogRead(POT_PIN);
+    float norm = (float)potVal / 4095.0f;
+    float calculatedVal = item.minVal + norm * (item.maxVal - item.minVal);
 
-      snprintf(line1, sizeof(line1), "[PAR] %-10s", item.displayName);
-      if (item.isInt) {
-        snprintf(line2, sizeof(line2), "Val: %-5d      ", (int)calculatedVal);
-      } else {
-        snprintf(line2, sizeof(line2), "Val: %-5.2f     ", calculatedVal);
-      }
-      break;
+    snprintf(line1, sizeof(line1), "[PAR] %-10s", item.displayName);
+    if (item.isInt) {
+      snprintf(line2, sizeof(line2), "Val: %-5d      ", (int)calculatedVal);
+    } else {
+      snprintf(line2, sizeof(line2), "Val: %-5.2f     ", calculatedVal);
     }
-    case MODE_ACTIONS: {
-      snprintf(line1, sizeof(line1), "[AÇÃO] %d/%d     ", selectedIndex + 1, TOTAL_ACTIONS);
-      snprintf(line2, sizeof(line2), "%-16s", ACTIONS_LIST[selectedIndex].displayName);
-      break;
-    }
+    break;
+  }
+  case MODE_ACTIONS: {
+    snprintf(line1, sizeof(line1), "[AÇÃO] %d/%d     ", selectedIndex + 1,
+             TOTAL_ACTIONS);
+    snprintf(line2, sizeof(line2), "%-16s",
+             ACTIONS_LIST[selectedIndex].displayName);
+    break;
+  }
   }
 
   lcd.setCursor(0, 0);
@@ -145,7 +246,7 @@ void updateLcdDisplay() {
 }
 
 // ── Publish MQTT Command ───────────────────────────────────
-void sendMqttCommand(const char* subtopic, const char* payload) {
+void sendMqttCommand(const char *subtopic, const char *payload) {
   if (!mqttClient.connected()) {
     reconnectMQTT();
   }
@@ -179,9 +280,10 @@ void checkButtons() {
   if (digitalRead(BTN_PREV_PIN) == LOW) {
     if (now - lastBtnPrevTime > BTN_COOLDOWN) {
       lastBtnPrevTime = now;
-      int maxItems = (currentMode == MODE_EFFECTS) ? TOTAL_EFFECTS :
-                     (currentMode == MODE_PRESETS) ? TOTAL_PRESETS :
-                     (currentMode == MODE_PARAMS)  ? TOTAL_PARAMS  : TOTAL_ACTIONS;
+      int maxItems = (currentMode == MODE_EFFECTS)   ? TOTAL_EFFECTS
+                     : (currentMode == MODE_PRESETS) ? TOTAL_PRESETS
+                     : (currentMode == MODE_PARAMS)  ? TOTAL_PARAMS
+                                                     : TOTAL_ACTIONS;
 
       selectedIndex = (selectedIndex - 1 + maxItems) % maxItems;
       updateLcdDisplay();
@@ -192,9 +294,10 @@ void checkButtons() {
   if (digitalRead(BTN_NEXT_PIN) == LOW) {
     if (now - lastBtnNextTime > BTN_COOLDOWN) {
       lastBtnNextTime = now;
-      int maxItems = (currentMode == MODE_EFFECTS) ? TOTAL_EFFECTS :
-                     (currentMode == MODE_PRESETS) ? TOTAL_PRESETS :
-                     (currentMode == MODE_PARAMS)  ? TOTAL_PARAMS  : TOTAL_ACTIONS;
+      int maxItems = (currentMode == MODE_EFFECTS)   ? TOTAL_EFFECTS
+                     : (currentMode == MODE_PRESETS) ? TOTAL_PRESETS
+                     : (currentMode == MODE_PARAMS)  ? TOTAL_PARAMS
+                                                     : TOTAL_ACTIONS;
 
       selectedIndex = (selectedIndex + 1) % maxItems;
       updateLcdDisplay();
@@ -219,7 +322,8 @@ void checkButtons() {
 
 // ── Handle Potentiometer Smooth Reading ────────────────────
 void checkPotentiometer() {
-  if (currentMode != MODE_PARAMS) return;
+  if (currentMode != MODE_PARAMS)
+    return;
 
   unsigned long now = millis();
   int raw = analogRead(POT_PIN);
@@ -237,9 +341,13 @@ void checkPotentiometer() {
 
       char jsonPayload[64];
       if (item.isInt) {
-        snprintf(jsonPayload, sizeof(jsonPayload), "{\"param\":\"%s\",\"value\":%d}", item.paramId, (int)calculatedVal);
+        snprintf(jsonPayload, sizeof(jsonPayload),
+                 "{\"param\":\"%s\",\"value\":%d}", item.paramId,
+                 (int)calculatedVal);
       } else {
-        snprintf(jsonPayload, sizeof(jsonPayload), "{\"param\":\"%s\",\"value\":%.3f}", item.paramId, calculatedVal);
+        snprintf(jsonPayload, sizeof(jsonPayload),
+                 "{\"param\":\"%s\",\"value\":%.3f}", item.paramId,
+                 calculatedVal);
       }
 
       sendMqttCommand("param", jsonPayload);
@@ -252,7 +360,12 @@ void setup() {
   Serial.begin(115200);
 
   preferences.begin("tracked_remote", false);
-  String savedIp = preferences.getString("broker_ip", "192.168.0.8");
+  String savedIp = preferences.getString("broker_ip", "a1d0120f.ala.us-east-1.emqxsl.com");
+  // Se a Flash contiver o IP antigo 192.168.0.8, força a atualização para o EMQX Cloud
+  if (savedIp == "192.168.0.8" || savedIp.length() == 0) {
+    savedIp = "a1d0120f.ala.us-east-1.emqxsl.com";
+    preferences.putString("broker_ip", savedIp);
+  }
   savedIp.toCharArray(brokerIp, sizeof(brokerIp));
 
   pinMode(BTN_PREV_PIN, INPUT_PULLUP);
@@ -271,15 +384,17 @@ void setup() {
   lcd.print("Remote Controller");
   delay(1200);
 
-  // WiFiManager com Campo Personalizado para o IP do Mac
+  // WiFiManager com Campo Personalizado para o Broker MQTT
   WiFiManager wifiManager;
   wifiManager.setSaveParamsCallback(saveParamsCallback);
   wifiManager.setConnectTimeout(15);
 
-  WiFiManagerParameter custom_broker_ip("broker_ip", "IP do Mac (Broker MQTT)", brokerIp, 32);
+  WiFiManagerParameter custom_broker_ip("broker_ip", "Host MQTT Broker",
+                                        brokerIp, 64);
   wifiManager.addParameter(&custom_broker_ip);
 
-  // Se o Botão MENU (GPIO 27) estiver Pressionado ao Ligar, Força o Reset do Wi-Fi e abre o Portal Captivo!
+  // Se o Botão MENU (GPIO 27) estiver Pressionado ao Ligar, Força o Reset do
+  // Wi-Fi e abre o Portal Captivo!
   if (digitalRead(BTN_MENU_PIN) == LOW) {
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -306,7 +421,7 @@ void setup() {
     if (newIp.length() > 0) {
       newIp.toCharArray(brokerIp, sizeof(brokerIp));
       preferences.putString("broker_ip", brokerIp);
-      Serial.println("Novo IP do Mac salvo na Flash: " + newIp);
+      Serial.println("Novo Host MQTT salvo na Flash: " + newIp);
     }
   }
 
@@ -319,14 +434,15 @@ void setup() {
     Serial.println("Responder mDNS do ESP32 iniciado (trackedremote.local)");
   }
 
-  // 🔍 BUSCA AUTOMÁTICA mDNS (Opção 2)
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(" Buscando Mac...");
-  lcd.setCursor(0, 1);
-  lcd.print("magictracked.loc");
-
-  if (resolveMacAddress()) {
+  // 🔍 Se for o broker em nuvem EMQX, conecta direto sem tentar mDNS local
+  if (String(brokerIp).indexOf("emqxsl.com") >= 0) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("  EMQX Cloud   ");
+    lcd.setCursor(0, 1);
+    lcd.print(" Conectando...  ");
+    delay(1000);
+  } else if (resolveMacAddress()) {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print(" Mac Encontrado!");
