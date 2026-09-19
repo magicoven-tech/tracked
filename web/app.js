@@ -15,8 +15,9 @@ class WebSocketConnection {
   connect(ip) {
     return new Promise((resolve) => {
       try {
-        const wsUrl = (ip.startsWith('ws://') || ip.startsWith('wss://')) ? ip : `ws://${ip}:81/`;
-        this.socket = new WebSocket(wsUrl);
+        const isWss = ip.startsWith('ws://') || ip.startsWith('wss://');
+        const wsUrl = isWss ? ip : `ws://${ip}:81/`;
+        this.socket = (isWss && ip.includes('emqx')) ? new WebSocket(wsUrl, ['mqtt']) : new WebSocket(wsUrl);
 
         this.socket.onopen = () => {
           this.connected = true;

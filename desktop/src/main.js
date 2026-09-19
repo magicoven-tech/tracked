@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ? `wss://${emqxHost}:8084/mqtt`
       : `ws://${window.location.hostname || 'localhost'}:1884`;
 
-    const ws = new WebSocket(wsUrl);
+    const ws = isGitHubPages ? new WebSocket(wsUrl, ['mqtt']) : new WebSocket(wsUrl);
     ws.onopen = () => {
       console.log(`[Remote Control] Conectado ao servidor ${isGitHubPages ? 'EMQX Cloud WSS (' + emqxHost + ')' : 'WebSocket local do Mac'}!`);
     };
