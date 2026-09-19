@@ -17,12 +17,13 @@
 //   POT_PIN   (GPIO 34) → Ajuste em Tempo Real dos Parâmetros
 // ============================================================
 
-#include <ESPmDNS.h>
-#include <LiquidCrystal.h>
-#include <Preferences.h>
-#include <PubSubClient.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <WiFiManager.h>
+#include <LiquidCrystal.h>
+#include <PubSubClient.h>
+#include <Preferences.h>
+#include <ESPmDNS.h>
 
 Preferences preferences;
 
@@ -34,12 +35,12 @@ LiquidCrystal lcd(19, 23, 18, 17, 16, 15);
 #define BTN_APPLY_PIN 32
 #define POT_PIN 34
 
-// ── Networking & MQTT ──────────────────────────────────────
-WiFiClient espClient;
+// ── Networking & MQTT (TLS / SSL para EMQX Cloud) ─────────
+WiFiClientSecure espClient;
 PubSubClient mqttClient(espClient);
 
 char brokerIp[64] = "a1d0120f.ala.us-east-1.emqxsl.com";
-const int MQTT_PORT = 1883;
+const int MQTT_PORT = 8883; // Porta TLS/SSL do EMQX Cloud
 bool shouldSaveConfig = false;
 
 // Callback para salvar configurações do WiFiManager
@@ -361,8 +362,9 @@ void setup() {
 
   preferences.begin("tracked_remote", false);
   String savedIp = preferences.getString("broker_ip", "a1d0120f.ala.us-east-1.emqxsl.com");
-  // Se a Flash contiver o IP antigo 192.168.0.8, força a atualização para o EMQX Cloud
-  if (savedIp == "192.168.0.8" || savedIp.length() == 0) {
+  
+  // Garante que o IP seja o EMQX Cloud (se houver qualquer IP numérico antigo salvo na Flash)
+  if (!savedIp.endsWith("emqxsl.com")) {
     savedIp = "a1d0120f.ala.us-east-1.emqxsl.com";
     preferences.putString("broker_ip", savedIp);
   }
@@ -457,6 +459,9 @@ void setup() {
     lcd.print(brokerIp);
     delay(1500);
   }
+
+  // Configura TLS sem validação de certificado CA (ideal para ESP32 conectar na porta 8883 do EMQX)
+  espClient.setInsecure();
 
   mqttClient.setServer(brokerIp, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
