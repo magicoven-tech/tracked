@@ -3,4 +3,5 @@ node_modules/
 desktop/node_modules/
 desktop/dist/
 desktop/release/
+desktop/.vite/
 *.log
