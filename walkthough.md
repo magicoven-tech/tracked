@@ -1,6 +1,6 @@
 # Walkthrough — Menu Universal e Sincronização de Alarmes
 
-Evoluímos o sistema do **Trenzin** com navegação aprimorada no menu de configurações físicas (através dos Botões 1, 2, 3 e 4), isolamos as modificações em variáveis temporárias até o salvamento definitivo, sincronizamos todas as configurações adicionando novos alarmes pela placa, redesenhamos a visualização de alarmes no painel web, configuramos o hardware para rodar de forma 100% **Standalone** e adicionamos sincronização bidirecional do temporizador Pomodoro.
+Evoluímos o sistema do **Tracked** com navegação aprimorada no menu de configurações físicas (através dos Botões 1, 2, 3 e 4), isolamos as modificações em variáveis temporárias até o salvamento definitivo, sincronizamos todas as configurações adicionando novos alarmes pela placa, redesenhamos a visualização de alarmes no painel web, configuramos o hardware para rodar de forma 100% **Standalone** e adicionamos sincronização bidirecional do temporizador Pomodoro.
 
 ---
 
@@ -13,7 +13,7 @@ Implementamos uma comunicação robusta e espelhada para o temporizador:
 - **Sincronização no Boot/Reconexão:** Atualizamos o parser de mensagens do PWA em `web/app.js`. Se o usuário abrir a página do painel com um temporizador rodando de forma standalone no ESP32, o PWA assume o estado de foco/pausa correspondente, sincroniza os segundos restantes com precisão e inicia seu contador local na tela de forma contínua, mantendo o gráfico de progresso e o LCD em perfeito alinhamento.
 
 ### 2. Sistema Standalone (Independente do Web App)
-O Trenzin inicializa de forma autônoma:
+O Tracked inicializa de forma autônoma:
 - **Remoção de Bloqueios:** O display exibe a face piscando e a barra de status de forma autônoma logo após a inicialização, sem travar na tela de "Aguardando app..".
 
 ### 3. Mensagens Temporárias de Status do PWA (Conectado / Desconectado)
@@ -25,7 +25,7 @@ Os avisos permanecem por **3 segundos** e somem sozinhos.
 Se o robô ligar e não encontrar nenhuma rede Wi-Fi configurada (ou a conexão falhar):
 - O LCD exibirá instruções claras instruindo o usuário a se conectar no ponto de acesso local gerado pelo ESP32 para configurar as credenciais:
   - Linha 1: `Conecte no WiFi:`
-  - Linha 2: `Trenzin-Setup   `
+  - Linha 2: `Tracked-Setup   `
 
 ### 5. Layout de Grade Responsiva para Alarmes no PWA
 Redesenhamos a interface de exibição de alarmes no painel web (`web/style.css`) para se adaptar de forma responsiva (grid de duas colunas em desktops, empilhado verticalmente em telas menores).

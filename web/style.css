@@ -1,5 +1,5 @@
 /* ============================================================
-   TRENZIN — Design System
+   TRACKED — Design System
    Braun / Minimalist Dark Mode SPA
    ============================================================ */
 
@@ -722,7 +722,7 @@ body {
 }
 
 .disabled-overlay::after {
-  content: 'Conecte o Trenzin';
+  content: 'Conecte o Tracked';
   position: absolute;
   inset: 0;
   display: flex;

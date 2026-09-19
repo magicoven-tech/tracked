@@ -13,9 +13,9 @@ const char WEB_HTML[] PROGMEM = R"=====(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-  <title>Trenzin - Seu companheiro de mesa</title>
+  <title>Tracked - Seu companheiro de mesa</title>
   <meta name="description"
-    content="Control your Trenzin desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
+    content="Control your Tracked desk robot. Manage expressions, Pomodoro timer, and send messages via USB Serial.">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,7 +34,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
   <!-- Apple Mobile Web App Metas -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Trenzin">
+  <meta name="apple-mobile-web-app-title" content="Tracked">
   <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 
@@ -45,13 +45,13 @@ const char WEB_HTML[] PROGMEM = R"=====(
     <div class="view view--active" id="view-home">
       <header class="header animate-in" id="header">
         <div class="header__brand">
-          <h1 class="header__logo">TREN<span>ZIN</span></h1>
+          <h1 class="header__logo">TRACK<span>ED</span></h1>
           <span class="header__tagline" id="date-display">Seu companheiro de mesa</span>
         </div>
         <div class="connection-group">
           <button class="connect-btn" id="connect-btn">
             <span class="connect-btn__dot"></span>
-            <span class="connect-btn__text">Connect Trenzin</span>
+            <span class="connect-btn__text">Connect Tracked</span>
           </button>
         </div>
       </header>
@@ -159,7 +159,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
       </div>
       <div class="card animate-in">
         <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 24px;">
-          Digite uma mensagem curta para ser exibida no visor do Trenzin.
+          Digite uma mensagem curta para ser exibida no visor do Tracked.
         </p>
         <form class="message-form" id="message-form" onsubmit="return false;">
           <input type="text" class="message-input" id="message-input" placeholder="Sua mensagem..." maxlength="16"
@@ -254,7 +254,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
     <!-- ── Footer ──────────────────────────────────────── -->
     <footer class="footer">
       <p>
-        TRENZIN — ESP32 + LCD 1602A
+        TRACKED — ESP32 + LCD 1602A
         · by <a href="https://magicoven.tech" target="_blank" rel="noopener">MagicOven</a>
       </p>
     </footer>
@@ -359,7 +359,7 @@ const char WEB_HTML[] PROGMEM = R"=====(
 
 const char WEB_CSS[] PROGMEM = R"=====(
 /* ============================================================
-   TRENZIN — Design System
+   TRACKED — Design System
    Braun / Minimalist Dark Mode SPA
    ============================================================ */
 
@@ -1082,7 +1082,7 @@ body {
 }
 
 .disabled-overlay::after {
-  content: 'Conecte o Trenzin';
+  content: 'Conecte o Tracked';
   position: absolute;
   inset: 0;
   display: flex;
@@ -1263,7 +1263,7 @@ body {
 
 const char WEB_JS[] PROGMEM = R"=====(
 // ============================================================
-// TRENZIN — Web Serial Dashboard
+// TRACKED — Web Serial Dashboard
 // Communicates with Arduino Nano via Web Serial API
 // ============================================================
 
@@ -1349,7 +1349,7 @@ class PomodoroTimer {
       longBreakInterval: 4
     };
 
-    const savedConfig = localStorage.getItem('trenzin_pomodoro_config');
+    const savedConfig = localStorage.getItem('tracked_pomodoro_config');
     if (savedConfig) {
       try {
         this.config = { ...this.config, ...JSON.parse(savedConfig) };
@@ -1438,7 +1438,7 @@ class PomodoroTimer {
 }
 
 // ── Application State ──────────────────────────────────────
-const trenzinConn = new WebSocketConnection();
+const trackedConn = new WebSocketConnection();
 const timer = new PomodoroTimer();
 let currentExpression = 'idle';
 let lcdRow0 = '                ';
@@ -1505,25 +1505,25 @@ function setupEventListeners() {
   // Timer buttons
   $('#btn-start').addEventListener('click', () => {
     timer.start('focus');
-    trenzinConn.send(`TMR:FOCUS:${timer.config.focus}`);
+    trackedConn.send(`TMR:FOCUS:${timer.config.focus}`);
     addLog(`TMR:FOCUS:${timer.config.focus}`, 'tx');
   });
 
   $('#btn-pause').addEventListener('click', () => {
     if (timer.state === 'paused') {
       timer.resume();
-      trenzinConn.send('TMR:RESUME');
+      trackedConn.send('TMR:RESUME');
       addLog('TMR:RESUME', 'tx');
     } else {
       timer.pause();
-      trenzinConn.send('TMR:PAUSE');
+      trackedConn.send('TMR:PAUSE');
       addLog('TMR:PAUSE', 'tx');
     }
   });
 
   $('#btn-stop').addEventListener('click', () => {
     timer.stop();
-    trenzinConn.send('TMR:STOP');
+    trackedConn.send('TMR:STOP');
     addLog('TMR:STOP', 'tx');
   });
 
@@ -1531,11 +1531,11 @@ function setupEventListeners() {
     timer.completedPomodoros++;
     if (timer.completedPomodoros % timer.config.longBreakInterval === 0) {
       timer.start('long-break');
-      trenzinConn.send(`TMR:LBREAK:${timer.config.longBreak}`);
+      trackedConn.send(`TMR:LBREAK:${timer.config.longBreak}`);
       addLog(`TMR:LBREAK:${timer.config.longBreak}`, 'tx');
     } else {
       timer.start('short-break');
-      trenzinConn.send(`TMR:BREAK:${timer.config.shortBreak}`);
+      trackedConn.send(`TMR:BREAK:${timer.config.shortBreak}`);
       addLog(`TMR:BREAK:${timer.config.shortBreak}`, 'tx');
     }
   });
@@ -1559,7 +1559,7 @@ function setupEventListeners() {
     timer.config.longBreak = parseInt($('#input-long-break').value) || 15;
     timer.config.longBreakInterval = parseInt($('#input-long-interval').value) || 4;
 
-    localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
+    localStorage.setItem('tracked_pomodoro_config', JSON.stringify(timer.config));
 
     if (timer.state === 'off') {
       updateTimerDisplay();
@@ -1570,7 +1570,7 @@ function setupEventListeners() {
     $('#pomodoro-modal').classList.remove('active');
 
     // update hardware
-    trenzinConn.send(`CFG:POMO:${timer.config.focus}:${timer.config.shortBreak}:${timer.config.longBreak}`);
+    trackedConn.send(`CFG:POMO:${timer.config.focus}:${timer.config.shortBreak}:${timer.config.longBreak}`);
   });
 
   // ── Alarm Logic ───────────────────────────────────────────
@@ -1596,8 +1596,8 @@ function setupEventListeners() {
         alarms[idx].h = h;
         alarms[idx].m = m;
         alarms[idx].label = label || `Alarme ${alarms[idx].id + 1}`;
-        if (trenzinConn.connected) {
-          trenzinConn.send(`ALM:SET:${editingAlarmId}:${h}:${m}`);
+        if (trackedConn.connected) {
+          trackedConn.send(`ALM:SET:${editingAlarmId}:${h}:${m}`);
         }
       }
     } else {
@@ -1609,9 +1609,9 @@ function setupEventListeners() {
       const newId = alarms.length > 0 ? Math.max(...alarms.map(a => a.id)) + 1 : 0;
       const newAlarm = { id: newId, h, m, enabled: true, label: label || `Alarme ${newId + 1}` };
       alarms.push(newAlarm);
-      if (trenzinConn.connected) {
-        trenzinConn.send(`ALM:SET:${newAlarm.id}:${newAlarm.h}:${newAlarm.m}`);
-        trenzinConn.send(`ALM:ON:${newAlarm.id}`);
+      if (trackedConn.connected) {
+        trackedConn.send(`ALM:SET:${newAlarm.id}:${newAlarm.h}:${newAlarm.m}`);
+        trackedConn.send(`ALM:ON:${newAlarm.id}`);
       }
     }
 
@@ -1623,8 +1623,8 @@ function setupEventListeners() {
   $('#btn-delete-alarm').addEventListener('click', () => {
     if (editingAlarmId !== null) {
       alarms = alarms.filter(a => a.id !== editingAlarmId);
-      if (trenzinConn.connected) {
-        trenzinConn.send(`ALM:DEL:${editingAlarmId}`);
+      if (trackedConn.connected) {
+        trackedConn.send(`ALM:DEL:${editingAlarmId}`);
       }
       saveAlarms();
       renderAlarms();
@@ -1638,7 +1638,7 @@ function setupEventListeners() {
     const input = $('#message-input');
     const msg = input.value.trim();
     if (msg) {
-      trenzinConn.send('MSG:' + msg);
+      trackedConn.send('MSG:' + msg);
       addLog('MSG:' + msg, 'tx');
       lcdRow1 = msg.substring(0, 16).padEnd(16, ' ');
       updateLCDPreview();
@@ -1665,7 +1665,7 @@ function setupEventListeners() {
     updateLCDPreview();
     // Optional: browser notification
     if (Notification.permission === 'granted') {
-      new Notification('Trenzin', {
+      new Notification('Tracked', {
         body: timer.totalSeconds > 5 * 60 ? 'Sessão de foco concluída!' : 'A pausa acabou!',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="80" font-size="80">🤖</text></svg>'
       });
@@ -1675,8 +1675,8 @@ function setupEventListeners() {
 
 // ── Connection ─────────────────────────────────────────────
 async function handleConnect() {
-  if (trenzinConn.connected) {
-    await trenzinConn.disconnect();
+  if (trackedConn.connected) {
+    await trackedConn.disconnect();
     updateConnectionUI(false);
     addLog('Desconectado', 'system');
     return;
@@ -1690,23 +1690,23 @@ async function handleConnect() {
     ipToConnect = '192.168.4.1'; // IP fallback padrão do Access Point do ESP32
   }
 
-  trenzinConn.onConnect = () => {
+  trackedConn.onConnect = () => {
     updateConnectionUI(true);
-    addLog('Conectado ao Trenzin', 'system');
+    addLog('Conectado ao Tracked', 'system');
   };
 
-  trenzinConn.onReceive = (data) => {
+  trackedConn.onReceive = (data) => {
     addLog(data, 'rx');
     parseArduinoMessage(data);
   };
 
-  trenzinConn.onDisconnect = () => {
+  trackedConn.onDisconnect = () => {
     updateConnectionUI(false);
-    addLog('Trenzin desconectado', 'error');
+    addLog('Tracked desconectado', 'error');
   };
 
   addLog('Conectando ao WebSocket...', 'system');
-  const success = await trenzinConn.connect(ipToConnect);
+  const success = await trackedConn.connect(ipToConnect);
 
   if (!success) {
     updateConnectionUI(false);
@@ -1718,7 +1718,7 @@ async function handleConnect() {
 function sendExpression(expr) {
   currentExpression = expr;
   const cmd = 'EXP:' + expr.toUpperCase();
-  trenzinConn.send(cmd);
+  trackedConn.send(cmd);
   addLog(cmd, 'tx');
 
   // Update UI
@@ -1746,7 +1746,7 @@ function parseArduinoMessage(data) {
       $('#input-long-break').value = timer.config.longBreak;
 
       // Save locally
-      localStorage.setItem('trenzin_pomodoro_config', JSON.stringify(timer.config));
+      localStorage.setItem('tracked_pomodoro_config', JSON.stringify(timer.config));
 
       // Update UI if we are in OFF state (so the 25:00 text updates)
       if (timer.state === 'off') {
@@ -1870,7 +1870,7 @@ function updateConnectionUI(connected) {
     text.textContent = 'Conectado';
   } else {
     btn.classList.remove('connect-btn--connected');
-    text.textContent = 'Conectar Trenzin';
+    text.textContent = 'Conectar Tracked';
   }
 
   // Enable/disable controls
@@ -2004,7 +2004,7 @@ let alarms = [];
 let editingAlarmId = null;
 
 function initAlarm() {
-  const saved = localStorage.getItem('trenzin_alarms');
+  const saved = localStorage.getItem('tracked_alarms');
   if (saved) {
     alarms = JSON.parse(saved);
   } else {
@@ -2015,7 +2015,7 @@ function initAlarm() {
 }
 
 function saveAlarms() {
-  localStorage.setItem('trenzin_alarms', JSON.stringify(alarms));
+  localStorage.setItem('tracked_alarms', JSON.stringify(alarms));
 }
 
 function openAlarmModal(id) {
@@ -2072,8 +2072,8 @@ function renderAlarms() {
       a.enabled = !a.enabled;
       saveAlarms();
       renderAlarms();
-      if (trenzinConn.connected) {
-        trenzinConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
+      if (trackedConn.connected) {
+        trackedConn.send(a.enabled ? `ALM:ON:${a.id}` : `ALM:OFF:${a.id}`);
       }
     });
 
@@ -2088,10 +2088,10 @@ function renderAlarms() {
 )=====";
 
 const char WEB_MANIFEST[] PROGMEM = R"=====(
-{"name":"Trenzin OS","short_name":"Trenzin","description":"Seu companheiro de mesa inteligente","start_url":"/","display":"standalone","background_color":"#121212","theme_color":"#121212","orientation":"portrait-primary","icons":[{"src":"/icon-192.png","type":"image/svg+xml","sizes":"any"}]})=====";
+{"name":"Tracked OS","short_name":"Tracked","description":"Seu companheiro de mesa inteligente","start_url":"/","display":"standalone","background_color":"#121212","theme_color":"#121212","orientation":"portrait-primary","icons":[{"src":"/icon-192.png","type":"image/svg+xml","sizes":"any"}]})=====";
 
 const char WEB_SW[] PROGMEM = R"=====(
-const CACHE_NAME = 'trenzin-cache-v1'; const ASSETS_TO_CACHE = [ '/', '/style.css', '/app.js', '/manifest.json', '/icon-192.png' ]; self.addEventListener('install', (event) => { event.waitUntil( caches.open(CACHE_NAME).then((cache) => { return cache.addAll(ASSETS_TO_CACHE); }).then(() => self.skipWaiting()) ); }); self.addEventListener('activate', (event) => { event.waitUntil( caches.keys().then((cacheNames) => { return Promise.all( cacheNames.map((cache) => { if (cache !== CACHE_NAME) { return caches.delete(cache); } }) ); }).then(() => self.clients.claim()) ); }); self.addEventListener('fetch', (event) => { if (event.request.method !== 'GET' || event.request.url.includes(':81') || event.request.url.startsWith('ws:')) { return; } event.respondWith( caches.match(event.request).then((cachedResponse) => { if (cachedResponse) { return cachedResponse; } return fetch(event.request).then((response) => { if (response && response.status === 200 && response.type === 'basic') { const responseToCache = response.clone(); caches.open(CACHE_NAME).then((cache) => { cache.put(event.request, responseToCache); }); } return response; }).catch(() => { }); }) ); });)=====";
+const CACHE_NAME = 'tracked-cache-v1'; const ASSETS_TO_CACHE = [ '/', '/style.css', '/app.js', '/manifest.json', '/icon-192.png' ]; self.addEventListener('install', (event) => { event.waitUntil( caches.open(CACHE_NAME).then((cache) => { return cache.addAll(ASSETS_TO_CACHE); }).then(() => self.skipWaiting()) ); }); self.addEventListener('activate', (event) => { event.waitUntil( caches.keys().then((cacheNames) => { return Promise.all( cacheNames.map((cache) => { if (cache !== CACHE_NAME) { return caches.delete(cache); } }) ); }).then(() => self.clients.claim()) ); }); self.addEventListener('fetch', (event) => { if (event.request.method !== 'GET' || event.request.url.includes(':81') || event.request.url.startsWith('ws:')) { return; } event.respondWith( caches.match(event.request).then((cachedResponse) => { if (cachedResponse) { return cachedResponse; } return fetch(event.request).then((response) => { if (response && response.status === 200 && response.type === 'basic') { const responseToCache = response.clone(); caches.open(CACHE_NAME).then((cache) => { cache.put(event.request, responseToCache); }); } return response; }).catch(() => { }); }) ); });)=====";
 
 const char WEB_ICON[] PROGMEM = R"=====(
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192"> <defs> <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%"> <stop offset="0%" stop-color="#1e1e24" /> <stop offset="100%" stop-color="#0f0f12" /> </linearGradient> <linearGradient id="glow-grad" x1="0%" y1="0%" x2="0%" y2="100%"> <stop offset="0%" stop-color="#00f2fe" /> <stop offset="100%" stop-color="#4facfe" /> </linearGradient> <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"> <feGaussianBlur stdDeviation="3" result="blur" /> <feComposite in="SourceGraphic" in2="blur" operator="over" /> </filter> </defs> <rect width="192" height="192" rx="42" fill="url(#bg-grad)" /> <rect x="36" y="56" width="120" height="80" rx="24" fill="none" stroke="url(#glow-grad)" stroke-width="6" filter="url(#glow)" /> <circle cx="68" cy="96" r="14" fill="none" stroke="url(#glow-grad)" stroke-width="5" filter="url(#glow)" /> <circle cx="68" cy="96" r="6" fill="url(#glow-grad)" filter="url(#glow)" /> <circle cx="124" cy="96" r="14" fill="none" stroke="url(#glow-grad)" stroke-width="5" filter="url(#glow)" /> <circle cx="124" cy="96" r="6" fill="url(#glow-grad)" filter="url(#glow)" /> <path d="M 84 116 Q 96 124 108 116" fill="none" stroke="url(#glow-grad)" stroke-width="5" stroke-linecap="round" filter="url(#glow)" /> </svg>)=====";

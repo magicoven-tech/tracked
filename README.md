@@ -1,12 +1,12 @@
-# Trenzin OS
+# Tracked OS
 
-O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com um display LCD, capaz de expressar emoções, atuar como um temporizador Pomodoro e gerenciar múltiplos alarmes. Desenvolvido para rodar em um **ESP32** com uma interface Web moderna, responsiva e sincronizada em tempo real via WebSockets.
+O **Tracked** é um companheiro de mesa inteligente (*desk buddy*) equipado com um display LCD, capaz de expressar emoções, atuar como um temporizador Pomodoro e gerenciar múltiplos alarmes. Desenvolvido para rodar em um **ESP32** com uma interface Web moderna, responsiva e sincronizada em tempo real via WebSockets.
 
 ---
 
 ## 🛠 Funcionalidades do sistema
 
-- **Rostos e expressões:** O Trenzin possui 10 expressões dinâmicas com "olhos" animados no LCD (usando caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso (Idle) e conta com expressões de Feliz, Triste, Zangado, Focado (Focus), Dormindo (Sleep), Love (coração), Surpreso, Estrela e Tonto (X_X).
+- **Rostos e expressões:** O Tracked possui 10 expressões dinâmicas com "olhos" animados no LCD (usando caracteres customizados de 5x8). Ele pisca de forma aleatória quando ocioso (Idle) e conta com expressões de Feliz, Triste, Zangado, Focado (Focus), Dormindo (Sleep), Love (coração), Surpreso, Estrela e Tonto (X_X).
 - **Temporizador Pomodoro:**
   - Foco (25 min padrão), pausa curta (5 min) e pausa longa (15 min).
   - **Sincronização Bidirecional em Tempo Real:** O estado ativo do temporizador (ativo, pausado, tempo restante) é sincronizado em tempo real entre o hardware (LCD) e múltiplos clientes Web via WebSockets. Se um temporizador for iniciado standalone direto no ESP32, o Web App se autoajusta e sincroniza o tempo restante ao se conectar.
@@ -23,9 +23,9 @@ O **Trenzin** é um companheiro de mesa inteligente (*desk buddy*) equipado com 
   - **Salvamento Automático:** Todas as alterações feitas fisicamente são gravadas na memória Flash do chip através da biblioteca `<Preferences.h>`.
   - **Sincronização Bidirecional em Tempo Real:** Alterações feitas na interface Web atualizam o hardware instantaneamente (e vice-versa), mantendo os alarmes e os tempos do Pomodoro sincronizados em todos os dispositivos em tempo real.
 - **Conectividade smart:**
-  - **WiFiManager (Standalone & AP Mode):** Configuração de rede Wi-Fi através de portal captivo (`Trenzin-Setup`). Se nenhuma rede estiver cadastrada, o LCD exibe instruções amigáveis indicando para qual rede local se conectar. O sistema roda de forma 100% autônoma logo após a conexão Wi-Fi (sem travar à espera do app).
+  - **WiFiManager (Standalone & AP Mode):** Configuração de rede Wi-Fi através de portal captivo (`Tracked-Setup`). Se nenhuma rede estiver cadastrada, o LCD exibe instruções amigáveis indicando para qual rede local se conectar. O sistema roda de forma 100% autônoma logo após a conexão Wi-Fi (sem travar à espera do app).
   - **NTP time sync:** Atualização de horário automático baseado na rede (fuso horário UTC-3).
-  - **mDNS:** Permite acessar a interface do robô digitando `http://trenzin.local` no navegador.
+  - **mDNS:** Permite acessar a interface do robô digitando `http://tracked.local` no navegador.
 - **Web app integrado (SPA & PWA):**
   - Hospedado no próprio chip ESP32 (servidor Web embutido).
   - Interface desenvolvida em Vanilla JS, HTML e CSS (sem dependências pesadas de frameworks) com tema escuro elegante.
@@ -92,7 +92,7 @@ A configuração dos botões não exige resistores externos. Basta conectar um t
 
 ## 🧗 Desafios e soluções no desenvolvimento
 
-Para chegar na versão estável e fluida do Trenzin OS 2.0, passamos por uma série de pedreiras técnicas notáveis:
+Para chegar na versão estável e fluida do Tracked OS 2.0, passamos por uma série de pedreiras técnicas notáveis:
 
 1. **Gestão de espaço no ESP32 (frontend embutido):**
    * *Desafio:* Hospedar arquivos `.html`, `.css` e `.js` pesados na flash do ESP32 era inviável com a biblioteca `WebServer` padrão por causa da RAM, além de ser terrível desenvolver strings HTML dentro do código C++.
@@ -122,8 +122,8 @@ Para chegar na versão estável e fluida do Trenzin OS 2.0, passamos por uma sé
 2. Rode o construtor usando o Node: `node build_web.js`.
 3. Verifique se o `trenzin/web_assets.h` foi gerado/atualizado.
 4. Faça upload pelo IDE do Arduino (ou `arduino-cli`) para o ESP32 (`trenzin.ino`).
-5. Quando o robô ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Trenzin-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
-6. Digite `http://trenzin.local` no seu navegador!
+5. Quando o robô ligar, se ele nunca se conectou no seu Wi-Fi, um ponto de acesso **"Tracked-Setup"** aparecerá. Entre nele com seu celular para cadastrar sua rede.
+6. Digite `http://tracked.local` no seu navegador!
 
 <div align="center">
   <i>Criado com muito café pela MagicOven. ☕</i>

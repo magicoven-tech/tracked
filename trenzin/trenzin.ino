@@ -1,5 +1,5 @@
 // ============================================================
-// Trenzin Remote — ESP32 + LCD 1602A (MagicTracked Remote Controller via MQTT)
+// Tracked Remote — ESP32 + LCD 1602A (MagicTracked Remote Controller via MQTT)
 // ============================================================
 // Wiring (4-bit parallel mode for ESP32 - 3.3V Logic):
 //   LCD RS  → GPIO 19   LCD Enable → GPIO 23
@@ -187,7 +187,7 @@ void reconnectMQTT() {
     Serial.print(brokerIp);
     Serial.println(")...");
 
-    String clientId = "ESP32_TrenzinRemote_" + String(random(0xffff), HEX);
+    String clientId = "ESP32_TrackedRemote_" + String(random(0xffff), HEX);
     if (mqttClient.connect(clientId.c_str())) {
       Serial.println("MQTT Conectado com sucesso!");
       mqttClient.subscribe("magictracked/status/#");
@@ -423,8 +423,8 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   // Iniciar cliente mDNS no ESP32 antes de fazer consultas
-  if (MDNS.begin("trenzinremote")) {
-    Serial.println("Responder mDNS do ESP32 iniciado (trenzinremote.local)");
+  if (MDNS.begin("trackedremote")) {
+    Serial.println("Responder mDNS do ESP32 iniciado (trackedremote.local)");
   }
 
   // 🔍 BUSCA AUTOMÁTICA mDNS (Opção 2)

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trenzin-cache-v1';
+const CACHE_NAME = 'tracked-cache-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/style.css',
