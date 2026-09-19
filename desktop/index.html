@@ -87,34 +87,29 @@
         </div>
 
         <div class="sidebar-scroll">
-          <!-- Quick Access Section -->
+          <!-- Animation Group -->
+          <div class="control-group">
+            <label>Animation</label>
+            <div class="segmented-control">
+              <button id="btnPause" class="segment-btn">Pause</button>
+              <button id="btnPlay" class="segment-btn active">Play</button>
+            </div>
+          </div>
+
+          <!-- Section 1: EFFECT -->
           <section class="control-section">
-            <h3 class="section-title">Quick Access</h3>
+            <h3 class="section-title">EFFECT</h3>
 
             <div class="control-group">
               <label>Effect Shader</label>
-              <div class="segmented-control" style="flex-wrap: wrap; gap: 4px;">
-                <button id="btnMotionVeil" class="segment-btn active" style="font-size: 10px; flex: 1 1 30%;">Motion
-                  Veil</button>
-                <button id="btnLiquidRipple" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Liquid
-                  Ripple</button>
-                <button id="btnThermalVision" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Thermal
-                  Vision</button>
-                <button id="btnTouchDesigner" class="segment-btn"
-                  style="font-size: 10px; flex: 1 1 30%;">TouchDesigner</button>
-                <button id="btnAscii" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">ASCII Art</button>
-                <button id="btnGlitch" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Glitch
-                  Effect</button>
-                <button id="btnCircle" class="segment-btn" style="font-size: 10px; flex: 1 1 30%;">Effect
-                  Circle</button>
-              </div>
-            </div>
-
-            <div class="control-group">
-              <label>Animation</label>
-              <div class="segmented-control">
-                <button id="btnPause" class="segment-btn">Pause</button>
-                <button id="btnPlay" class="segment-btn active">Play</button>
+              <div class="segmented-control shader-grid">
+                <button id="btnMotionVeil" class="segment-btn">Motion Veil</button>
+                <button id="btnLiquidRipple" class="segment-btn">Liquid Ripple</button>
+                <button id="btnThermalVision" class="segment-btn">Thermal Vision</button>
+                <button id="btnTouchDesigner" class="segment-btn">TouchDesigner</button>
+                <button id="btnAscii" class="segment-btn">ASCII Art</button>
+                <button id="btnGlitch" class="segment-btn active">Glitch Effect</button>
+                <button id="btnCircle" class="segment-btn full-width">Effect Circle</button>
               </div>
             </div>
 
@@ -129,24 +124,16 @@
 
             <div class="control-group">
               <div class="label-row">
-                <label for="fabricOpacity">Fabric Opacity</label>
-                <span class="value-display" id="fabricOpacityVal">0.9</span>
+                <label for="skeletonLineWidth">Skeleton Thickness</label>
+                <span class="value-display" id="skeletonLineWidthVal">2.5px</span>
               </div>
-              <input type="range" id="fabricOpacity" min="0" max="1" step="0.01" value="0.9" />
-            </div>
-
-            <div class="control-group">
-              <div class="label-row">
-                <label for="refractionStrength">Refraction Strength</label>
-                <span class="value-display" id="refractionStrengthVal">76</span>
-              </div>
-              <input type="range" id="refractionStrength" min="0" max="150" step="1" value="76" />
+              <input type="range" id="skeletonLineWidth" min="1" max="6" step="0.5" value="2.5" />
             </div>
           </section>
 
-          <!-- Fabric Details Section -->
+          <!-- Section 2: FABRIC & SHADER -->
           <section class="control-section">
-            <h3 class="section-title">Fabric & Shader</h3>
+            <h3 class="section-title">FABRIC & SHADER</h3>
 
             <div class="control-group">
               <div class="label-row">
@@ -174,16 +161,24 @@
 
             <div class="control-group">
               <div class="label-row">
-                <label for="skeletonLineWidth">Skeleton Thickness</label>
-                <span class="value-display" id="skeletonLineWidthVal">2.5px</span>
+                <label for="fabricOpacity">Fabric Opacity</label>
+                <span class="value-display" id="fabricOpacityVal">0.9</span>
               </div>
-              <input type="range" id="skeletonLineWidth" min="1" max="6" step="0.5" value="2.5" />
+              <input type="range" id="fabricOpacity" min="0" max="1" step="0.01" value="0.9" />
+            </div>
+
+            <div class="control-group">
+              <div class="label-row">
+                <label for="refractionStrength">Refraction Strength</label>
+                <span class="value-display" id="refractionStrengthVal">76</span>
+              </div>
+              <input type="range" id="refractionStrength" min="0" max="150" step="1" value="76" />
             </div>
           </section>
 
-          <!-- Presets Section -->
+          <!-- Section 3: PRESETS -->
           <section class="control-section">
-            <h3 class="section-title">Presets</h3>
+            <h3 class="section-title">PRESETS</h3>
             <div class="preset-grid">
               <button class="preset-card active" data-preset="brik">
                 <div class="preset-swatch brik-swatch"></div>

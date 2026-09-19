@@ -578,10 +578,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         'connect_ack': 'ESP32 Conectado!'
       };
 
-      if (payload === 'play') {
-        btnPlay.click();
+      let actionText = actionLabels[payload] || payload;
+
+      if (payload === 'play' || payload === 'play_pause') {
+        if (appRenderer.isPlaying) {
+          btnPause.click();
+          actionText = '⏸ Pause';
+        } else {
+          btnPlay.click();
+          actionText = '▶ Play';
+        }
       } else if (payload === 'pause') {
         btnPause.click();
+        actionText = '⏸ Pause';
       } else if (payload === 'rec_toggle') {
         toggleRecordScreen();
       } else if (payload === 'reset') {
@@ -590,7 +599,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnFullscreen.click();
       }
 
-      showRemoteToast('🎮 Ação:', actionLabels[payload] || payload);
+      showRemoteToast('🎮 Ação:', actionText);
     }
 
     // Publish status feedback back to ESP32 via MQTT if in Electron

@@ -126,11 +126,11 @@ struct ParamItem {
 };
 
 ParamItem PARAMS_LIST[] = {
-  {"Opacidade",       "uOpacity",             0.0f, 1.0f,  false},
-  {"Refracao",        "uRefractionStrength",  0.0f, 150.0f, true},
   {"Iridescencia",    "uIridescence",         0.0f, 1.0f,  false},
   {"Dispersao RGB",   "uChromaticDispersion", 0.0f, 0.15f, false},
   {"Ondulacao",       "uWaveRipple",          0.0f, 1.0f,  false},
+  {"Opacidade",       "uOpacity",             0.0f, 1.0f,  false},
+  {"Refracao",        "uRefractionStrength",  0.0f, 150.0f, true},
   {"Esqueleto",       "skeletonLineWidth",    1.0f, 6.0f,  false}
 };
 const int TOTAL_PARAMS = 6;
