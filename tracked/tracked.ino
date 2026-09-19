@@ -52,20 +52,13 @@ bool resolveMacAddress() {
   Serial.println("[mDNS] Buscando 'magictracked.local' na rede Wi-Fi...");
   IPAddress resolvedIp;
 
-  // 1. Tenta resolver via mDNS nativo do ESP32
-  resolvedIp = MDNS.queryHost("magictracked", 2000);
+  // Tenta resolver via mDNS nativo com timeout curto (300ms) para não travar o loop
+  resolvedIp = MDNS.queryHost("magictracked.local", 300);
 
-  // 2. Se falhar no mDNS sem sufixo, tenta com o sufixo .local
-  if (resolvedIp == INADDR_NONE || resolvedIp == IPAddress(0, 0, 0, 0)) {
-    resolvedIp = MDNS.queryHost("magictracked.local", 2000);
-  }
-
-  // 3. Se ainda falhar, tenta a consulta via hostByName do Wi-Fi
   if (resolvedIp == INADDR_NONE || resolvedIp == IPAddress(0, 0, 0, 0)) {
     WiFi.hostByName("magictracked.local", resolvedIp);
   }
 
-  // Validação estrita: não aceita 0.0.0.0 nem INADDR_NONE
   if (resolvedIp != INADDR_NONE && resolvedIp != IPAddress(0, 0, 0, 0)) {
     snprintf(brokerIp, sizeof(brokerIp), "%d.%d.%d.%d", resolvedIp[0], resolvedIp[1], resolvedIp[2], resolvedIp[3]);
     Serial.printf("[mDNS] Mac encontrado em: %s\n", brokerIp);
@@ -76,114 +69,13 @@ bool resolveMacAddress() {
   return false;
 }
 
-// ── Remote Control Modes ───────────────────────────────────
-enum ControllerMode {
-  MODE_EFFECTS = 0,
-  MODE_PRESETS = 1,
-  MODE_PARAMS  = 2,
-  MODE_ACTIONS = 3
-};
-
-ControllerMode currentMode = MODE_EFFECTS;
-int selectedIndex = 0;
-
-// ── Data Lists ─────────────────────────────────────────────
-struct EffectItem {
-  const char* displayName;
-  const char* cmdId;
-};
-
-EffectItem EFFECTS_LIST[] = {
-  {"Motion Veil",     "motionVeil"},
-  {"Liquid Ripple",   "liquidRipple"},
-  {"Thermal Vision",  "thermalVision"},
-  {"TouchDesigner",   "touchDesignerPortal"},
-  {"ASCII Art",       "ascii"},
-  {"Glitch Effect",   "glitch"},
-  {"Effect Circle",   "circle"}
-};
-const int TOTAL_EFFECTS = 7;
-
-struct PresetItem {
-  const char* displayName;
-  const char* cmdId;
-};
-
-PresetItem PRESETS_LIST[] = {
-  {"Brik Original",   "brik"},
-  {"Liquid Glass",    "liquidGlass"},
-  {"Neon Prism",      "neonPrism"},
-  {"Rainbow Silk",    "silkCloth"}
-};
-const int TOTAL_PRESETS = 4;
-
-struct ParamItem {
-  const char* displayName;
-  const char* paramId;
-  float minVal;
-  float maxVal;
-  bool isInt;
-};
-
-ParamItem PARAMS_LIST[] = {
-  {"Iridescencia",    "uIridescence",         0.0f, 1.0f,  false},
-  {"Dispersao RGB",   "uChromaticDispersion", 0.0f, 0.15f, false},
-  {"Ondulacao",       "uWaveRipple",          0.0f, 1.0f,  false},
-  {"Opacidade",       "uOpacity",             0.0f, 1.0f,  false},
-  {"Refracao",        "uRefractionStrength",  0.0f, 150.0f, true},
-  {"Esqueleto",       "skeletonLineWidth",    1.0f, 6.0f,  false}
-};
-const int TOTAL_PARAMS = 6;
-
-struct ActionItem {
-  const char* displayName;
-  const char* cmdId;
-};
-
-ActionItem ACTIONS_LIST[] = {
-  {"Play / Pause",    "play"},
-  {"Gravar Tela",     "rec_toggle"},
-  {"Reset Controls",  "reset"},
-  {"Tela Cheia",      "fullscreen"}
-};
-const int TOTAL_ACTIONS = 4;
-
-// ── Potentiometer State ────────────────────────────────────
-int lastPotRaw = -1;
-unsigned long lastPotSendTime = 0;
-
-// ── Button Debounce ────────────────────────────────────────
-unsigned long lastBtnMenuTime = 0;
-unsigned long lastBtnPrevTime = 0;
-unsigned long lastBtnNextTime = 0;
-unsigned long lastBtnApplyTime = 0;
-const unsigned long BTN_COOLDOWN = 250;
-
-// ── LCD Status Overlay ─────────────────────────────────────
-String overlayMsg = "";
-unsigned long overlayTimeout = 0;
-
-// ── MQTT Callback for incoming status from Mac ──────────────
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  String msg = "";
-  for (unsigned int i = 0; i < length; i++) {
-    msg += (char)payload[i];
-  }
-  Serial.printf("[MQTT RX] %s: %s\n", topic, msg.c_str());
-
-  if (String(topic) == "magictracked/status/app") {
-    overlayMsg = "Mac: Conectado";
-    overlayTimeout = millis() + 2000;
-  }
-}
+// ... lists omitted ...
 
 void reconnectMQTT() {
   if (!mqttClient.connected()) {
-    // Tenta re-resolver por mDNS caso o IP do Mac tenha mudado na rede
-    resolveMacAddress();
     mqttClient.setServer(brokerIp, MQTT_PORT);
 
-    Serial.print("Conectando ao Broker MQTT no Mac (");
+    Serial.print("Conectando ao Broker MQTT (");
     Serial.print(brokerIp);
     Serial.println(")...");
 
