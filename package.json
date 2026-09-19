@@ -1,0 +1,12 @@
+{
+  "name": "tracked",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix desktop run dev",
+    "electron:dev": "npm --prefix desktop run electron:dev",
+    "build:mac": "npm --prefix desktop run build:mac",
+    "electron:build": "npm --prefix desktop run electron:build"
+  }
+}

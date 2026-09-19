@@ -2,6 +2,8 @@
   "name": "magic-tracked-desktop",
   "private": true,
   "version": "1.0.0",
+  "description": "MagicTracked Desktop Studio & MQTT Broker Controller",
+  "author": "MagicOven",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
@@ -10,7 +12,49 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.js",
     "electron:dev": "concurrently \"vite\" \"wait-on http-get://localhost:5174 && electron .\"",
-    "electron:build": "vite build && electron-builder"
+    "electron:build": "vite build && electron-builder",
+    "build:mac": "vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.magictracked.desktop",
+    "productName": "MagicTracked",
+    "copyright": "Copyright © 2026 MagicOven",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.graphics-design",
+      "icon": "public/icon.png"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
   },
   "dependencies": {
     "aedes": "^0.51.0",
@@ -18,7 +62,9 @@
     "gifenc": "^1.0.3",
     "mp4-muxer": "^5.2.2",
     "mqtt": "^5.10.1",
-    "three": "^0.170.0"
+    "mqtt-packet": "^9.0.0",
+    "three": "^0.170.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
